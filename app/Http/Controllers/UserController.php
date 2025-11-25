@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterUserRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+
+
 
 class UserController extends Controller
 {
@@ -72,4 +75,27 @@ class UserController extends Controller
             'message' => 'User logged out successfully'
         ], 200);
     }
+    public function show(){
+     $users=User::all();
+     return response()->json([
+        'message'=>'Opreration Completed Successfully',
+        'User'=>$users
+     ],200);
+    }
+    public function getUserFromToken( Request $request){
+        try{
+        $user=$request->user();
+        return response()->json([
+            'message'=>'Operation Completed Successfully',
+            'user'=>$user
+        ],200);
+    }
+    catch(Exception $e){
+        return response()->json([
+            'error'=>'User Not Found'
+        ],404);
+    }
+    }
 }
+    
+
