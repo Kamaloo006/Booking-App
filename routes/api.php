@@ -13,6 +13,11 @@ Route::get('/user', function (Request $request) {
 Route::post('/signUp', [UserController::class, 'register']);
 Route::post('/signIn', [UserController::class, 'login']);
 Route::post('/signOut', [UserController::class, 'logout'])->middleware('auth:sanctum');
+
 Route::get('/Users', [UserController::class, 'show']);
 
-Route::middleware('auth:sanctum')->get('/user/token', [UserController::class, 'getUserFromToken']);
+Route::middleware('auth:sanctum')->group(function () {
+
+    // get user from token
+    Route::get('/user/token', [UserController::class, 'getUserFromToken']);
+});
