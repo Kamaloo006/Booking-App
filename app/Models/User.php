@@ -29,6 +29,8 @@ class User extends Authenticatable
         'password'
     ];
 
+    protected $appends = ['profile_img_url', 'id_img_url'];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -50,5 +52,15 @@ class User extends Authenticatable
             // 'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getProfileImgUrlAttribute()
+    {
+        return $this->profile_img ? url('storage/' . $this->profile_img) : null;
+    }
+
+    public function getIdImgUrlAttribute()
+    {
+        return $this->id_img ? url('storage/' . $this->id_img) : null;
     }
 }
