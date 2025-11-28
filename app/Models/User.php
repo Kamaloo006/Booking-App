@@ -53,15 +53,15 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-<<<<<<< HEAD
-    public function properties(){
-         return $this->hasMany(Property::class);
+    public function properties()
+    {
+        return $this->hasMany(Property::class);
     }
-    public function bookings(){
+    public function bookings()
+    {
         return $this->hasMany(Booking::class);
     }
-   
-=======
+
 
     public function getProfileImgUrlAttribute()
     {
@@ -72,5 +72,4 @@ class User extends Authenticatable
     {
         return $this->id_img ? url('storage/' . $this->id_img) : null;
     }
->>>>>>> develop
 }
