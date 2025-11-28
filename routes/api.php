@@ -19,10 +19,22 @@ Route::middleware('auth:sanctum')->get('/user/token',[UserController::class,'get
 Route:: middleware('auth:sanctum')->post('/property',[PropertyController::class,'store']);
 Route::middleware('auth:sanctum')->post('/booking/{property}',[BookingController::class,'store']);
 
+
 Route::get('/Users', [UserController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    // users 
 
-    // get user from token
+    // get user by his token
     Route::get('/user/token', [UserController::class, 'getUserFromToken']);
+
+    // properties
+
+    // store new property
+    Route::post('/property', [PropertyController::class, 'store']);
+
+    //bookings
+
+    // store new booking
+    Route::post('/booking/{property_id}', [BookingController::class, 'store']);
 });

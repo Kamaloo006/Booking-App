@@ -81,7 +81,6 @@ class UserController extends Controller
             'message' => 'User logged out successfully'
         ], 200);
     }
-
     public function show()
     {
         $users = User::all();
@@ -90,7 +89,6 @@ class UserController extends Controller
             'User' => $users
         ], 200);
     }
-
     public function getUserFromToken(Request $request)
     {
         try {
@@ -101,8 +99,7 @@ class UserController extends Controller
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'error' => 'User Not Found',
-                'message' => $e->getMessage()
+                'error' => 'User Not Found'
             ], 404);
         }
     }
