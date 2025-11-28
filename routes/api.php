@@ -15,6 +15,11 @@ Route::get('/user', function (Request $request) {
 Route::post('/signUp', [UserController::class, 'register']);
 Route::post('/signIn', [UserController::class, 'login']);
 Route::post('/signOut', [UserController::class, 'logout'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->get('/user/token',[UserController::class,'getUserFromToken']);
+Route:: middleware('auth:sanctum')->post('/property',[PropertyController::class,'store']);
+Route::middleware('auth:sanctum')->post('/booking/{property}',[BookingController::class,'store']);
+
+
 Route::get('/Users', [UserController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
