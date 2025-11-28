@@ -25,8 +25,11 @@ class User extends Authenticatable
         'profile_img',
         'id_img',
         'phone_number',
-        'role'
+        'role',
+        'password'
     ];
+
+    protected $appends = ['profile_img_url', 'id_img_url'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -34,7 +37,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        // 'password',
+        'password',
         'remember_token',
     ];
 
@@ -47,7 +50,17 @@ class User extends Authenticatable
     {
         return [
             // 'email_verified_at' => 'datetime',
-            // 'password' => 'hashed',
+            'password' => 'hashed',
         ];
+    }
+
+    public function getProfileImgUrlAttribute()
+    {
+        return $this->profile_img ? url('storage/' . $this->profile_img) : null;
+    }
+
+    public function getIdImgUrlAttribute()
+    {
+        return $this->id_img ? url('storage/' . $this->id_img) : null;
     }
 }
