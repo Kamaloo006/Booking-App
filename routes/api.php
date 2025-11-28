@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -15,3 +17,5 @@ Route::post('/signIn', [UserController::class, 'login']);
 Route::post('/signOut', [UserController::class, 'logout'])->middleware('auth:sanctum');
 Route::get('/Users',[UserController::class,'show']);
 Route::middleware('auth:sanctum')->get('/user/token',[UserController::class,'getUserFromToken']);
+Route:: middleware('auth:sanctum')->post('/property',[PropertyController::class,'store']);
+Route::middleware('auth:sanctum')->post('/booking/{property}',[BookingController::class,'store']);
