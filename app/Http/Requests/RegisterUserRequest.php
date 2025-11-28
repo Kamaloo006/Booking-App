@@ -28,6 +28,8 @@ class RegisterUserRequest extends FormRequest
             'profile_img'  => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
             'id_img'       => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
 
+            'password' => 'required|string|min:8|max:255|confirmed',
+
             'date_of_birth' => 'required|date|before:today',
             'role' => 'required|in:owner,renter',
 
