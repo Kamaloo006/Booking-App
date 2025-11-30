@@ -31,10 +31,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // properties
 
     // store new property
-    Route::post('/property', [PropertyController::class, 'store']);
+    Route::middleware('ownerOnly')->post('/property', [PropertyController::class, 'store']);
 
     //bookings
 
     // store new booking
-    Route::post('/booking/{property_id}', [BookingController::class, 'store']);
+    Route::post('/booking/property/{property_id}', [BookingController::class, 'store']);
+    Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
+    Route::delete('/booking/{booking_id}',[BookingController::class,'delete']);
+    Route::get('/bookings',[BookingController::class,'getAllBookings']);
 });
