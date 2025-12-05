@@ -20,6 +20,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->enum('payment_status',['pending','paid','failed','refunded','cancelled']);
             $table->decimal('price');
+            $table->softDeletes();
         });
     }
 
