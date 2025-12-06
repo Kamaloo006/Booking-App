@@ -11,18 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('properties', function (Blueprint $table) {
+        Schema::create('property_images', function (Blueprint $table) {
             $table->id();
+            $table->string('image_path')->nullable();
+            $table->boolean('is_main')->default(false);
+            // $table->integer('order')->default(0);
+            $table->foreignId('property_id')->constrained('properties')->cascadeOnDelete();
             $table->timestamps();
-
-
-            $table->string('city')->default('unknown');
-            $table->string('governorate')->default('unknown');
-            $table->decimal('price_per_day', 10, 2);
-            $table->string('description');
-
-
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
         });
     }
 
@@ -31,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('properties');
+        Schema::dropIfExists('property_images');
     }
 };

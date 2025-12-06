@@ -15,29 +15,41 @@ Route::get('/user', function (Request $request) {
 Route::post('/signUp', [UserController::class, 'register']);
 Route::post('/signIn', [UserController::class, 'login']);
 Route::post('/signOut', [UserController::class, 'logout'])->middleware('auth:sanctum');
-Route::middleware('auth:sanctum')->get('/user/token',[UserController::class,'getUserFromToken']);
-Route:: middleware('auth:sanctum')->post('/property',[PropertyController::class,'store']);
-Route::middleware('auth:sanctum')->post('/booking/{property}',[BookingController::class,'store']);
-
+Route::get('/properties', [PropertyController::class, 'showProperties']);
 
 Route::get('/Users', [UserController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    // users 
+    //--------------------------------------|| Users 
 
     // get user by his token
     Route::get('/user/token', [UserController::class, 'getUserFromToken']);
 
-    // properties
 
-    // store new property
-    Route::middleware('ownerOnly')->post('/property', [PropertyController::class, 'store']);
+    //--------------------------------------|| Properties
+    // create new property
+    Route::post('/property', [PropertyController::class, 'store'])->middleware('ownerOnly');
 
-    //bookings
+    // Update property informations
+    Route::put('/properties/{id}', [PropertyController::class, 'updateInfo'])->middleware('ownerOnly');
 
+    // add new image to property
+    Route::post('/properties/{id}/images', [PropertyController::class, 'addImages'])->middleware('ownerOnly');
+
+    // replace image in property
+    Route::post('/properties/{id}/images/{image_id}/replace', [PropertyController::class, 'replaceImage'])->middleware('ownerOnly');
+
+    //  delete image in property
+    Route::delete('/properties/{id}/images/{image_id}', [PropertyController::class, 'deleteImage'])->middleware('ownerOnly');
+
+    // set main image in property
+    Route::put('/properties/{id}/images/{image_id}/set-main', [PropertyController::class, 'setMainImage'])->middleware('ownerOnly');
+
+
+    //--------------------------------------|| Bookings
     // store new booking
     Route::post('/booking/property/{property_id}', [BookingController::class, 'store']);
     Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
-    Route::delete('/booking/{booking_id}',[BookingController::class,'delete']);
-    Route::get('/bookings',[BookingController::class,'getAllBookings']);
+    Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
+    Route::get('/bookings', [BookingController::class, 'getAllBookings']);
 });

@@ -22,12 +22,13 @@ class StorePropertyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
-            'city'=>'required|string',
-            'governorate'=>'required|string',
-            'price_per_day'=>'required|numeric',
-            'description'=>'required|string'
 
+            'city' => 'required|string',
+            'governorate' => 'required|string',
+            'price_per_day' => 'required|numeric',
+            'description' => 'required|string',
+            'images' => 'required|array|min:1|max:4',
+            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
 
         ];
     }

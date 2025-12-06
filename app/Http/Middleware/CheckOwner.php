@@ -15,10 +15,10 @@ class CheckOwner
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if($request->user()->role !='owner'){
-         return response()->json([
-            'message'=>'Only Owners Can Add Properties'
-         ],403);
+        if ($request->user()->role !== 'owner') {
+            return response()->json([
+                'message' => 'Only Owners Can Add Properties'
+            ], 403);
         }
         return $next($request);
     }
