@@ -162,6 +162,28 @@ class PropertyController extends Controller
     }
 
 
+    public function destroy($property_id)
+    {
+        $property = Property::findOrFail($property_id);
+
+        $this->authorize('delete', $property);
+
+        // Delete all images from storage
+        foreach ($property->images as $img) {
+            Storage::disk('public')->delete($img->image_path);
+        }
+
+        // Delete all image records
+        PropertyImage::where('property_id', $property_id)->delete();
+
+        // Delete the property itself
+        $property->delete();
+
+        return response()->json([
+            'message' => 'Property deleted successfully.'
+        ], 200);
+    }
+
 
 
     public function showProperties()

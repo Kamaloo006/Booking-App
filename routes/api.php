@@ -45,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // set main image in property
     Route::put('/properties/{id}/images/{image_id}/set-main', [PropertyController::class, 'setMainImage'])->middleware('ownerOnly');
 
+    // delete property and its images
+    Route::delete('/property/{id}', [PropertyController::class, 'destroy'])->middleware('ownerOnly');
 
     //--------------------------------------|| Bookings
     // store new booking

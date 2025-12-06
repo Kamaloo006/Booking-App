@@ -45,7 +45,7 @@ class PropertyPolicy
      */
     public function delete(User $user, Property $property): bool
     {
-        return false;
+        return $user->id === $property->user_id;
     }
 
     /**
