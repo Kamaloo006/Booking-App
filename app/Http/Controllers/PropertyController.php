@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePropertyFeaturesReqeust;
 use Illuminate\Http\Request;
 
 use App\Http\Requests\StorePropertyRequest;
@@ -11,7 +12,7 @@ use App\Models\PropertyImage;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,15 +20,25 @@ class PropertyController extends Controller
 {
     use AuthorizesRequests;
 
+
+    public function showProperty($property_id)
+    {
+        $property = Property::findOrFail($property_id);
+        return response()->json(['property' => $property->load('images')]);
+    }
+
     public function store(StorePropertyRequest $request)
     {
         $validated = $request->validated();
 
         $property = Property::create([
             'city'          => $validated['city'],
+            'name'          => $validated['name'],
             'governorate'   => $validated['governorate'],
             'price_per_day' => $validated['price_per_day'],
             'description'   => $validated['description'],
+            'category'      => $validated['category'],
+            'is_available'  => $validated['is_available'],
             'user_id'       => $request->user()->id,
         ]);
 
@@ -65,6 +76,28 @@ class PropertyController extends Controller
 
         return response()->json(['message' => 'property informations updated successfuly', 'property' => $property], 200);
     }
+
+    public function storeFeatures(StorePropertyFeaturesReqeust $request, $property_id)
+    {
+        $property = Property::findOrFail($property_id);
+        $this->authorize('update', $property);
+        $validatedData = $request->validated();
+
+        if ($property->user_id !== Auth::user()->id) {
+            return response()->json(['message' => 'you not authorized to add features'], 403);
+        }
+
+        if ($property->features) $property->features->update($validatedData);
+
+        $property->features()->create($validatedData);
+
+        return response()->json([
+            'message' => 'Features saved successfully.',
+            'property' => $property->load('features'),
+        ], 200);
+    }
+
+    // تزبيط الفلترة مع اكتر من وحدة
 
 
     public function addImages(Request $request, $property_id)
@@ -185,12 +218,62 @@ class PropertyController extends Controller
     }
 
 
-
-    public function showProperties()
+    public function filterProperties(Request $request)
     {
-        $properties = Property::with('user')->get();
+        $query = Property::with(['user', 'features']);
+
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+
+        if ($request->filled('governorate')) {
+            $query->where('governorate', $request->governorate);
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('min_price')) {
+            $query->where('price_per_day', '>=', $request->min_price);
+        }
+
+        if ($request->filled('max_price')) {
+            $query->where('price_per_day', '<=', $request->max_price);
+        }
+
+        if ($request->filled('is_available')) {
+            $query->where('is_available', $request->is_available);
+        }
+
+        // features filter
+        $query->whereHas('features', function ($f) use ($request) {
+
+            if ($request->filled('rooms')) {
+                $f->where('rooms', '>=', $request->rooms);
+            }
+
+            if ($request->filled('bathrooms')) {
+                $f->where('bathrooms', '>=', $request->bathrooms);
+            }
+
+            if ($request->filled('kitchens')) {
+                $f->where('kitchens', '>=', $request->kitchens);
+            }
+
+            if ($request->filled('min_area')) {
+                $f->where('area', '>=', $request->min_area);
+            }
+
+            if ($request->filled('max_area')) {
+                $f->where('area', '<=', $request->max_area);
+            }
+        });
+
+        $properties = $query->get();
 
         return response()->json([
+            'message' => 'Filtered properties retrieved successfully.',
             'properties' => $properties
         ], 200);
     }

@@ -27,9 +27,11 @@ class StorePropertyRequest extends FormRequest
             'governorate' => 'required|string',
             'price_per_day' => 'required|numeric',
             'description' => 'required|string',
+            'name' => 'required|string|max:255',
             'images' => 'required|array|min:1|max:4',
             'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
-
+            'is_available' => 'nullable|boolean',
+            'category' => 'required|in:house,villa,apartment'
         ];
     }
 }

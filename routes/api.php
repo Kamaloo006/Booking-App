@@ -30,6 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // create new property
     Route::post('/property', [PropertyController::class, 'store'])->middleware('ownerOnly');
 
+    //  show property by id
+    Route::get("/property/{property_id}", [PropertyController::class, 'showProperty']);
     // Update property informations
     Route::put('/properties/{id}', [PropertyController::class, 'updateInfo'])->middleware('ownerOnly');
 
@@ -48,10 +50,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // delete property and its images
     Route::delete('/property/{id}', [PropertyController::class, 'destroy'])->middleware('ownerOnly');
 
+    // add new features to property or update them
+    Route::post('/properties/{property_id}/features', [PropertyController::class, 'storeFeatures'])->middleware('ownerOnly');
+
     //--------------------------------------|| Bookings
     // store new booking
     Route::post('/booking/property/{property_id}', [BookingController::class, 'store']);
     Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
     Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
     Route::get('/bookings', [BookingController::class, 'getAllBookings']);
+
+
+
+    // --------------------------------- || Filter Properties
+    Route::get('properties', [PropertyController::class, 'filterProperties']);
 });

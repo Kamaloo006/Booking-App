@@ -24,9 +24,11 @@ class UpdatePropertyRequest extends FormRequest
         return [
             'city' => 'sometimes|string',
             'governorate' => 'sometimes|string',
-
             'price_per_day' => 'sometimes|numeric',
             'description' => 'sometimes|string',
+            'is_available' => 'sometimes|boolean',
+            'category' => 'sometimes|in:house,villa,apartment',
+            'name' => 'sometimes|string|max:255',
 
             // 'images' => 'sometimes|array|min:1',
             // 'images.*' => "image|mimes:jpeg,png,jpg,gif|max:5120",

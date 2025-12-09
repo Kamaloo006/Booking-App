@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Property extends Model
 {
-
-    protected $fillable = ['price_per_day', 'city', 'user_id', 'description', 'governorate'];
+    use HasFactory;
+    protected $fillable = ['name', 'price_per_day', 'city', 'user_id', 'description', 'governorate', 'category', 'is_available'];
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -22,11 +23,15 @@ class Property extends Model
     public function images()
     {
         return $this->hasMany(PropertyImage::class)
-            ->orderByDesc('is_main') // اجعل الرئيسية تظهر أول واحدة
+            ->orderByDesc('is_main')
             ->orderBy('id');
     }
 
-    // إرجاع رابط الصورة الرئيسية
+    public function features()
+    {
+        return $this->hasOne(Feature::class);
+    }
+
     public function getMainImageUrlAttribute()
     {
         $main = $this->images()->where('is_main', true)->first();
