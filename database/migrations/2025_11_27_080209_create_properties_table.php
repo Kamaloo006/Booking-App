@@ -14,11 +14,18 @@ return new class extends Migration
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->string('city');
-            $table->string('governorate');
-            $table->decimal('price_per_day');
+            $table->string('name');
+            $table->enum('category', ['house', 'villa', 'apartment'])->default('house');
+            $table->string('city')->default('unknown');
+            $table->string('governorate')->default('unknown');
+            $table->decimal('price_per_day', 10, 2);
+            $table->text('description');
+
+
+            $table->boolean('is_available')->default(true);
+
+
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('description');
         });
     }
 

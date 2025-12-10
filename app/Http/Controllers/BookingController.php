@@ -15,16 +15,13 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BookingController extends Controller
 {
-      use AuthorizesRequests;
-    
+    use AuthorizesRequests;
+
     public function store(StoreBookingRequest $request,  $property_id)
-    { 
-      
+    {
+
         try {
-
             $validatedData = $request->validated();
-
-
             $property = Property::findOrFail($property_id);
 
 
@@ -33,6 +30,12 @@ class BookingController extends Controller
                     'message' => 'You already own this property, you cannot book your own property'
                 ], 422);
             }
+
+            // if (!$property->is_available) {
+            //     return response()->json([
+            //         'message' => 'This property is not available for booking'
+            //     ], 422);
+            // }
 
 
             $request_start = Carbon::parse($validatedData['start_date']);
@@ -55,6 +58,9 @@ class BookingController extends Controller
                 ], 422);
             }
 
+            // if (!$propertyStatus) $property->update(['is_available' => true]);
+
+
 
             $days = $request_start->diffInDays($request_end) + 1;
             $total_price = $property->price_per_day * $days;
@@ -67,6 +73,10 @@ class BookingController extends Controller
 
             $booking = Booking::create($validatedData);
 
+
+            // $property->update(['is_available' => false]);
+
+
             return response()->json([
                 'message' => 'Operation Completed Successfully',
                 'booking' => $booking
@@ -77,17 +87,23 @@ class BookingController extends Controller
             return response()->json(['error' => 'error happened while booking', 'message' => $e->getMessage()], 500);
         }
     }
+
+
+
     public function update(UpdateBookingRequest $request, $booking_id)
     {
         try {
-            $booking=Booking::findOrFail($booking_id);
-            $this->authorize('update',$booking);
+            $booking = Booking::findOrFail($booking_id);
+            $this->authorize('update', $booking);
             $validatedData = $request->validated();
-            $request_start = isset($validatedData['start_date'])? Carbon::parse($validatedData['start_date']):Carbon::parse($booking->start_date);
-            $request_end = isset($validatedData['end_date'])? Carbon::parse($validatedData['end_date']): Carbon::parse($booking->end_date) ;
-             $property = $booking->property;
+            $property = $booking->property;
 
-            $propertyStatus = $property->bookings()->where('id','!=',$booking->id)
+
+            $request_start = isset($validatedData['start_date']) ? Carbon::parse($validatedData['start_date']) : Carbon::parse($booking->start_date);
+            $request_end = isset($validatedData['end_date']) ? Carbon::parse($validatedData['end_date']) : Carbon::parse($booking->end_date);
+
+
+            $propertyStatus = $property->bookings()->where('id', '!=', $booking->id)
                 ->where(function ($q1) use ($request_start, $request_end) {
                     $q1->whereBetween('start_date', [$request_start, $request_end])
                         ->orWhereBetween('end_date', [$request_start, $request_end])
@@ -96,6 +112,7 @@ class BookingController extends Controller
                                 ->where('end_date', '>', $request_end);
                         });
                 })->exists();
+
 
             if ($propertyStatus) {
                 return response()->json([
@@ -121,65 +138,70 @@ class BookingController extends Controller
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'booking not found', 'message' => $e->getMessage()], 404);
-        }
-        catch(AuthorizationException $e){
-           return response()->json(['error'=>'you are not allowed to update this booking','message'=>$e->getMessage()],403);
-        }
-         catch (Exception $e) {
+        } catch (AuthorizationException $e) {
+            return response()->json(['error' => 'you are not allowed to update this booking', 'message' => $e->getMessage()], 403);
+        } catch (Exception $e) {
             return response()->json(['error' => 'error happened while  booking', 'message' => $e->getMessage()], 500);
         }
     }
-    public function delete($booking_id){
-        try{
-            
-         $booking=Booking::findOrFail($booking_id);
-         $this->authorize('delete',$booking);
-         $booking->delete();
-         return response()->json([
-            'message'=>'booking is deleted successfully'
-         ],200);
-        }
-        catch (ModelNotFoundException $e) {
+
+
+    public function delete($booking_id)
+    {
+        try {
+
+            $booking = Booking::findOrFail($booking_id);
+            $this->authorize('delete', $booking);
+            $property = $booking->property;
+            $booking->delete();
+
+            $hasOtherBookings = $property->bookings()->exists();
+
+            if (!$hasOtherBookings) $property->update(['is_available' => true]);
+
+
+            return response()->json([
+                'message' => 'Booking deleted successfully',
+                'property_status' => $property->is_available,
+                'property' => $property
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'booking not found', 'message' => $e->getMessage()], 404);
-        }
-        catch(AuthorizationException $e){
-            return response()->json(['error'=>'you are not allowed to delete this booking','message'=>$e->getMessage()],403);
-        }
-         catch (Exception $e) {
+        } catch (AuthorizationException $e) {
+            return response()->json(['error' => 'you are not allowed to delete this booking', 'message' => $e->getMessage()], 403);
+        } catch (Exception $e) {
             return response()->json(['error' => 'error happened while deleting  booking', 'message' => $e->getMessage()], 500);
         }
     }
-    public function getAllBookings(Request $request){
-      $user=$request->user();
-      try{
-      $bookings=Booking::withTrashed()->where('user_id',$user->id)->get()->map(function($booking){
-       return [
-        'booking_id'=>$booking->id,
-        'property_id'=>$booking->property_id,
-        'user_id'=>$booking->user_id,
-        'start_date'=>$booking->start_date,
-        'end_date'=>$booking->end_date,
-        'is_deleted'=>$booking->trashed()
-       ];
-      });
-      if($bookings->isEmpty()){
-        return response()->json([
-            'message'=>'This user has no bookings',
-            'bookings'=>[]
-        ],200);
-      }
-      return response()->json([
-            'message' => "These are all bookings related to this user",
-            'bookings' => $bookings
-        ], 200);
-
-      }
-      catch(\Exception $e){
-       return response()->json([
-        'message'=>'something went wrong',
-        'error'=>$e->getMessage()
-       ],500);
-
-      }
+    public function getAllBookings(Request $request)
+    {
+        $user = $request->user();
+        try {
+            $bookings = Booking::withTrashed()->where('user_id', $user->id)->get()->map(function ($booking) {
+                return [
+                    'booking_id' => $booking->id,
+                    'property_id' => $booking->property_id,
+                    'user_id' => $booking->user_id,
+                    'start_date' => $booking->start_date,
+                    'end_date' => $booking->end_date,
+                    'is_deleted' => $booking->trashed()
+                ];
+            });
+            if ($bookings->isEmpty()) {
+                return response()->json([
+                    'message' => 'This user has no bookings',
+                    'bookings' => []
+                ], 200);
+            }
+            return response()->json([
+                'message' => "These are all bookings related to this user",
+                'bookings' => $bookings
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
