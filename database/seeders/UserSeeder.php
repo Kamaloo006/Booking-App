@@ -16,8 +16,8 @@ class UserSeeder extends Seeder
     {
         $users = [
             (object)[
-                "first_name" => "Hassan",
-                "last_name" => "Mohamed",
+                "first_name" => "Mazen",
+                "last_name" => "Alrefai",
                 "phone_number" => "094047681",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
@@ -25,24 +25,24 @@ class UserSeeder extends Seeder
 
             ],
             (object)[
-                "first_name" => "Ahmed",
-                "last_name" => "Mohamed",
+                "first_name" => "Kamal",
+                "last_name" => "Alkhateeb",
                 "phone_number" => "094047682",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 "password" => Hash::make("123123123")
             ],
             (object)[
-                "first_name" => "Mazen",
-                "last_name" => "Mohamed",
+                "first_name" => "Loay",
+                "last_name" => "Hammodeh",
                 "phone_number" => "094047683",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 "password" => Hash::make("123123123")
             ],
             (object)[
-                "first_name" => "Salah",
-                "last_name" => "Mohamed",
+                "first_name" => "Zuhair",
+                "last_name" => "Mahjoub",
                 "phone_number" => "094047684",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',

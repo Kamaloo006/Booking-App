@@ -54,7 +54,7 @@ class BookingController extends Controller
 
             if ($propertyStatus) {
                 return response()->json([
-                    'message' => 'This property is already booked for the selected dates'
+                    'message' => 'This property is already booked for the selected dates',
                 ], 422);
             }
 

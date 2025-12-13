@@ -226,6 +226,7 @@ class PropertyController extends Controller
             $query->where('city', $request->city);
         }
 
+        // category = villa
         if ($request->filled('governorate')) {
             $query->where('governorate', $request->governorate);
         }

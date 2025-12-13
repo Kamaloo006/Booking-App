@@ -26,6 +26,7 @@ class PropertyImage extends Model
         return url('storage/' . $this->image_path);
     }
 
+
     public function property()
     {
         return $this->belongsTo(Property::class);
