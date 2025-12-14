@@ -18,8 +18,9 @@ return new class extends Migration
             $table->foreignId('property_id')->constrained('properties')->cascadeOnDelete();
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('payment_status',['pending','paid','failed','refunded','cancelled']);
-            $table->decimal('price');
+            $table->string('card_last4');
+            $table->string('billing_address');
+            $table->decimal('price',10,2);
             $table->softDeletes();
         });
     }
