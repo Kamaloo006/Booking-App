@@ -55,12 +55,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //--------------------------------------|| Bookings
     // store new booking
+    
     Route::post('/booking/property/{property_id}', [BookingController::class, 'store']);
     Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
     Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
     Route::get('/bookings', [BookingController::class, 'getAllBookings']);
-
-
+    Route::post('/rating/{booking}',[BookingController::class,'addRating']);
+    
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
