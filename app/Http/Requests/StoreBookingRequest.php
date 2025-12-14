@@ -24,7 +24,9 @@ class StoreBookingRequest extends FormRequest
         return [
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after:start_date',
-            'payment_status' => 'required|in:pending,paid,failed,refunded,cancelled'
+           'card_last4' => 'required|string|min:4|regex:/^[0-9]+$/',
+
+            'billing_address'=>'required|string|max:255'
         ];
     }
 }

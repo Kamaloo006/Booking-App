@@ -31,6 +31,12 @@ class PropertyPolicy
     {
         return $user->id === $property->user_id;
     }
+    public function add(User $user,Property $property){
+        if($property->user_id==$user->id){
+            return Response::deny('you cannot book your own property');
+        }
+        return Response::allow();
+    }
 
     /**
      * Determine whether the user can update the model.
