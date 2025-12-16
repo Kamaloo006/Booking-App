@@ -22,8 +22,10 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+            // 'start_date' => 'required|date|after_or_equal:today',
+            // 'end_date' => 'required|date|after:start_date',
            'card_last4' => 'required|string|min:4|regex:/^[0-9]+$/',
 
             'billing_address'=>'required|string|max:255'

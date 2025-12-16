@@ -88,4 +88,10 @@ class BookingPolicy
         }
         return Response::allow();
     }
+    public function editRate(User $user,Booking $booking){
+        if($booking->user_id!=$user->id){
+            return Response::deny('This booking does not belong to you to update it');
+        }
+        return Response::allow();
+    }
 }
