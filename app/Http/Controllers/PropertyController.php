@@ -278,4 +278,13 @@ class PropertyController extends Controller
             'properties' => $properties
         ], 200);
     }
+    public function getPropertiesByOwner(){
+       $user=Auth::user();
+        $this->authorize('showByOwner',$user);
+        $properties=$user->properties()->with('Features','images')->get();
+        return response()->json([
+            'message'=>'These all properties for this owner',
+            'properties'=>$properties
+        ],200);
+    }
 }

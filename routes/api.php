@@ -24,7 +24,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // get user by his token
     Route::get('/user/token', [UserController::class, 'getUserFromToken']);
-
+    //get owner's proeperties by his token
+    Route::get('/owner/token',[PropertyController::class,'getPropertiesByOwner']); 
 
     //--------------------------------------|| Properties
     // create new property
@@ -63,12 +64,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
     // get all bookings
     Route::get('/bookings', [BookingController::class, 'getAllBookings']);
+    Route::get('/bookings/cancelled', [BookingController::class, 'getCancelledBookings']);
+    Route::get('/bookings/old', [BookingController::class, 'getOldBookings']);
+     Route::get('/bookings/current/future', [BookingController::class, 'getCurrentAndFutureBookings']);
+    Route::get('/bookings/current', [BookingController::class, 'getCurrentBookings']);
+    Route::get('/bookings/future', [BookingController::class, 'getFutureBookings']);
 
-    // add rate to booking
-    Route::post('/rating/{booking}', [BookingController::class, 'addRating']);
-    // update rating to booking
-    // Route::put('/rating/{booking_id}', [BookingController::class, 'updateRating']);
 
+    Route::post('/rating/{booking}',[BookingController::class,'addRating']);
+     Route::put('/updaterating/{booking}',[BookingController::class,'updateRating']);
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
