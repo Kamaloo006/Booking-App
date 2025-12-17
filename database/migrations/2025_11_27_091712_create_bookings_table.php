@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->string('card_last4');
             $table->string('billing_address');
-            $table->decimal('price',10,2);
+            $table->decimal('price', 10, 2);
             $table->softDeletes();
         });
     }

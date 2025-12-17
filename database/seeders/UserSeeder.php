@@ -21,6 +21,7 @@ class UserSeeder extends Seeder
                 "phone_number" => "094047681",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
+                'status' => 'accepted',
                 "password" => Hash::make("123123123"),
 
             ],
@@ -30,6 +31,7 @@ class UserSeeder extends Seeder
                 "phone_number" => "094047682",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
+                'status' => 'accepted',
                 "password" => Hash::make("123123123")
             ],
             (object)[
@@ -38,6 +40,7 @@ class UserSeeder extends Seeder
                 "phone_number" => "094047683",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
+                'status' => 'accepted',
                 "password" => Hash::make("123123123")
             ],
             (object)[
@@ -46,12 +49,22 @@ class UserSeeder extends Seeder
                 "phone_number" => "094047684",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
+                'status' => 'accepted',
+                "password" => Hash::make("123123123")
+            ],
+            (object)[
+                "first_name" => "Jad",
+                "last_name" => "Jado",
+                "phone_number" => "094047685",
+                "date_of_birth" => "2005-1-4",
+                "role" => 'admin',
+                'status' => 'accepted',
                 "password" => Hash::make("123123123")
             ],
         ];
 
         foreach ($users as $user) {
-            User::create(['first_name' => $user->first_name, 'last_name' => $user->last_name, 'date_of_birth' => $user->date_of_birth, 'phone_number' => $user->phone_number, 'role' => $user->role, 'password' => $user->password]);
+            User::create(['first_name' => $user->first_name, 'last_name' => $user->last_name, 'date_of_birth' => $user->date_of_birth, 'status' => $user->status, 'phone_number' => $user->phone_number, 'role' => $user->role, 'password' => $user->password]);
         }
     }
 }

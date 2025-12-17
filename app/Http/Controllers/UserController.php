@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -34,11 +35,12 @@ class UserController extends Controller
             'id_img'        => $validatedData['id_img'] ?? null,
             'phone_number'  => $validatedData['phone_number'],
             'role'          => $validatedData['role'],
+            'status'        => 'pending',
         ]);
 
 
         return response()->json([
-            'message' => 'user created successfully',
+            'message' => 'user created successfully. Please wait for admin approval',
             'user' => $user
         ], 201);
     }
@@ -59,11 +61,19 @@ class UserController extends Controller
             ], 404);
         }
 
+        if ($user->status !== 'accepted') {
+            return response()->json([
+                'message' => 'Your account is not approved yet'
+            ], 403);
+        }
+
+
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'message' => 'Invalid password'
             ], 401);
         }
+
 
         $token = $user->createToken('Auth_Token')->plainTextToken;
 
@@ -73,6 +83,8 @@ class UserController extends Controller
             'token' => $token
         ], 200);
     }
+
+
 
     public function logout(Request $request)
     {
@@ -101,6 +113,59 @@ class UserController extends Controller
             return response()->json([
                 'error' => 'User Not Found'
             ], 404);
+        }
+    }
+
+    public function getAllPendingUsers()
+    {
+        $users = User::where('status', 'pending')->get();
+
+        return response()->json([
+            'message' => 'Pending users retrieved successfully',
+            'users' => $users
+        ], 200);
+    }
+
+    public function approveUser($user_id)
+    {
+        $user = User::findOrFail($user_id);
+
+        if ($user->status === 'accepted') {
+            return response()->json([
+                'message' => 'User already approved'
+            ], 200);
+        }
+
+        $user->status = 'accepted';
+        $user->save();
+
+        return response()->json([
+            'message' => 'User approved successfully'
+        ], 200);
+    }
+
+
+
+    public function rejectUser($user_id)
+    {
+        $user = User::findOrFail($user_id);
+
+        if ($user->status !== 'accepted') {
+            if ($user->profile_img) {
+                Storage::disk('public')->delete($user->profile_img);
+            }
+
+            if ($user->id_img) {
+                Storage::disk('public')->delete($user->id_img);
+            }
+
+            $user->delete();
+
+            return response()->json([
+                'message' => 'User rejected By admin. please try again using signUp'
+            ], 200);
+        } else {
+            return response()->json(['message' => 'you can`t reject Accepted User'], 403);
         }
     }
 }
