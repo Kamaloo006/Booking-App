@@ -21,8 +21,9 @@ return new class extends Migration
             $table->string('id_img')->default('id_pictures/fake_id.jpg');
             $table->string('password');
             $table->string('date_of_birth');
+            $table->enum('status', ['pending', 'accepted'])->default('pending');
             $table->string('phone_number');
-            $table->enum('role', ['owner', 'renter'])->default('renter');
+            $table->enum('role', ['owner', 'renter', 'admin'])->default('renter');
             $table->rememberToken();
             $table->timestamps();
         });
