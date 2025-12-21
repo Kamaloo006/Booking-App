@@ -31,17 +31,17 @@ class BookingPolicy
     /**
      * Determine whether the user can create models.
      */
-    
+
 
     /**
      * Determine whether the user can update the model.
      */
     public function update(User $user, Booking $booking)
     {
-        if($user->id!=$booking->user_id){
+        if ($user->id != $booking->user_id) {
             return Response::deny('This booking does not belong to you');
         }
-        if(now()->greaterThanOrEqualTo($booking->start_date)){
+        if (now()->greaterThanOrEqualTo($booking->start_date)) {
             return Response::deny('You cannot modify it because it has already started');
         }
         return Response::allow();
@@ -52,8 +52,8 @@ class BookingPolicy
      */
     public function delete(User $user, Booking $booking)
     {
-        if($user->id!=$booking->user_id){
-           return Response::deny('This booking does not belong to you');
+        if ($user->id != $booking->user_id) {
+            return Response::deny('This booking does not belong to you');
         }
         
         return Response::allow();
@@ -74,15 +74,17 @@ class BookingPolicy
     {
         return false;
     }
-    public function rate(User $user,Booking $booking){
-        if($booking->user_id!=$user->id){
-         return Response::deny('This booking does not belong to you');
+
+    public function rate(User $user, Booking $booking)
+    {
+        if ($booking->user_id != $user->id) {
+            return Response::deny('This booking does not belong to you');
         }
-        if(Carbon::parse($booking->end_date)->isFuture()){
+        if (Carbon::parse($booking->end_date)->isFuture()) {
             return Response::deny('You cannot rate it until it has finished');
         }
-        if($booking->rating){
-            return Response::deny('This booking  has already been rated');
+        if ($booking->rating) {
+            return Response::deny('This booking has already been rated');
         }
         return Response::allow();
     }

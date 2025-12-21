@@ -63,11 +63,14 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/favorites/{property}/toggle', [PropertyController::class, 'toggleFavorite']);
 
     //--------------------------------------|| Bookings
+
     // store new booking
-    
     Route::post('/booking/property/{property_id}', [BookingController::class, 'store']);
+    // update booking
     Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
+    // delete booking
     Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
+    // get all bookings
     Route::get('/bookings', [BookingController::class, 'getAllBookings']);
     Route::get('/bookings/cancelled', [BookingController::class, 'getCancelledBookings']);
     Route::get('/bookings/old', [BookingController::class, 'getOldBookings']);
@@ -81,4 +84,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
+
+
+
+
+
+    // -------------------------------- || Admin Functions
+    Route::middleware('checkAdmin')->group(function () {
+        Route::get('/admin/pendingUsers', [UserController::class, 'getAllPendingUsers']);
+        Route::patch('/admin/users/{user_id}/approve', [UserController::class, 'approveUser']);
+        Route::post('/admin/users/{user_id}/reject', [UserController::class, 'rejectUser']);
+    });
 });

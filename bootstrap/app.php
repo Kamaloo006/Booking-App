@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckAdmin;
 use App\Http\Middleware\CheckOwner;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,7 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
         // $middleware->statefulApi();
         $middleware->alias([
-            'ownerOnly'=>CheckOwner::class,
+            'ownerOnly' => CheckOwner::class,
+            'checkAdmin' => CheckAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
