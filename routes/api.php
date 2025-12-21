@@ -62,6 +62,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/booking/{booking_id}', [BookingController::class, 'update']);
     // delete booking
     Route::delete('/booking/{booking_id}', [BookingController::class, 'delete']);
+
+
     // get all bookings
     Route::get('/bookings', [BookingController::class, 'getAllBookings']);
     Route::get('/bookings/cancelled', [BookingController::class, 'getCancelledBookings']);
@@ -71,13 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/future', [BookingController::class, 'getFutureBookings']);
 
 
+
     Route::post('/rating/{booking}', [BookingController::class, 'addRating']);
     Route::put('/updaterating/{booking}', [BookingController::class, 'updateRating']);
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
-
-
 
 
 

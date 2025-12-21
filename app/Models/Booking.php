@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Booking extends Model
 {
     use SoftDeletes;
-    protected $fillable = ['user_id', 'property_id', 'start_date', 'end_date', 'card_last4', 'billing_address', 'price'];
+    protected $fillable = ['user_id', 'property_id', 'start_date', 'end_date', 'card_number', 'billing_address', 'price'];
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -82,16 +82,18 @@ class BookingPolicy
         if ($booking->user_id != $user->id) {
             return Response::deny('This booking does not belong to you');
         }
-        if (Carbon::parse($booking->end_date)->isFuture()) {
-            return Response::deny('You cannot rate it until it has finished');
-        }
+        // if (Carbon::parse($booking->end_date)->isFuture()) {
+        //     return Response::deny('You cannot rate it until it has finished');
+        // }
         if ($booking->rating) {
             return Response::deny('This booking has already been rated');
         }
         return Response::allow();
     }
-    public function editRate(User $user,Booking $booking){
-        if($booking->user_id!=$user->id){
+
+    public function editRate(User $user, Booking $booking)
+    {
+        if ($booking->user_id != $user->id) {
             return Response::deny('This booking does not belong to you to update it');
         }
         return Response::allow();

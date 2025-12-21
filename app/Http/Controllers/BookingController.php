@@ -50,7 +50,7 @@ class BookingController extends Controller
         $validatedData['price']       = $total_price;
         $validatedData['user_id']     = $request->user()->id;
         $validatedData['property_id'] = $property->id;
-        $validatedData['card_last4'] = substr($validatedData['card_last4'], -4);
+        $validatedData['card_number'] = substr($validatedData['card_number'], -4);
         $booking = Booking::create($validatedData);
 
         return response()->json([
@@ -160,44 +160,60 @@ class BookingController extends Controller
         ], 201);
     }
 
-    // public function updateRating(Request $request, $booking_id)
-    // {
-    //     $booking = Booking::findOrFail($booking_id);
-    //     $this->authorize('rate', $booking);
-
-    //     $updatedRating = $request->validate([
-    //         'stars' => 'sometimes|integer|min:1|max:5',
-    //         'comment' => 'sometimes|string'
-    //     ]);
-
-    //     $booking->rating()->update($updatedRating);
-
-    //     return response()->json([
-    //         'message' => 'Operation Completed Successfully',
-    //         'rating' => $booking->rating
-    //     ], 200);
-    // }
-    public function updateRating(Request $request,Booking $booking){
-    $this->authorize('editrate',$booking);
-    $validateData=$request->validate([
-        'stars'=>'required|integer|min:1|max:5',
-        'comment'=>'nullable|string'
-    ]);
-    if(!$booking->rating){
+    public function updateRating(Request $request, Booking $booking)
+    {
+        $this->authorize('editrate', $booking);
+        $validateData = $request->validate([
+            'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+        if (!$booking->rating) {
+            return response()->json([
+                'message' => 'booking has no rating to update it'
+            ], 404);
+        }
+        $booking->rating()->update($validateData);
         return response()->json([
-            'message'=>'booking has no rating to update it'
-        ],404);
+            'message' => 'Operation Completed Successfully',
+            'rating' => $booking->rating
+        ], 200);
     }
-    $booking->rating()->update($validateData);
-    return response()->json([
-        'message'=>'Operation Completed Successfully',
-        'rating'=>$booking->rating
-     ],200);
 
-    }
-    public function getCancelledBookings(){
-        $user=Auth::user();
+
+    public function getCancelledBookings()
+    {
+        $user = Auth::user();
         $bookings = Booking::onlyTrashed()->where('user_id', $user->id)->get()->map(function ($booking) {
+            return [
+                'booking_id' => $booking->id,
+                'property_id' => $booking->property_id,
+                'user_id' => $booking->user_id,
+                'start_date' => $booking->start_date,
+                'end_date' => $booking->end_date,
+                'is_deleted' => $booking->trashed()
+            ];
+        });
+        if ($bookings->isEmpty()) {
+            return response()->json([
+                'message' => 'This user has no bookings',
+                'bookings' => []
+            ], 200);
+        }
+        return response()->json([
+            'message' => "These are all cancelled bookings related to this user",
+            'bookings' => $bookings
+        ], 200);
+    }
+
+
+    public function getOldBookings()
+    {
+        $user = Auth::user();
+
+        $bookings = Booking::where('user_id', $user->id)
+            ->where('end_date', '<', now())
+            ->get()
+            ->map(function ($booking) {
                 return [
                     'booking_id' => $booking->id,
                     'property_id' => $booking->property_id,
@@ -207,137 +223,114 @@ class BookingController extends Controller
                     'is_deleted' => $booking->trashed()
                 ];
             });
-            if ($bookings->isEmpty()) {
-                return response()->json([
-                    'message' => 'This user has no bookings',
-                    'bookings' => []
-                ], 200);
-            }
+
+        if ($bookings->isEmpty()) {
             return response()->json([
-                'message' => "These are all cancelled bookings related to this user",
-                'bookings' => $bookings
+                'message' => 'This user has no old bookings',
+                'bookings' => []
             ], 200);
-    }
-public function getOldBookings()
-{
-    $user = Auth::user();
+        }
 
-    $bookings = Booking::where('user_id', $user->id)
-        ->where('end_date', '<', now())
-        ->get()
-        ->map(function ($booking) {
-            return [
-                'booking_id' => $booking->id,
-                'property_id' => $booking->property_id,
-                'user_id' => $booking->user_id,
-                'start_date' => $booking->start_date,
-                'end_date' => $booking->end_date,
-                'is_deleted' => $booking->trashed()
-            ];
-        });
-
-    if ($bookings->isEmpty()) {
         return response()->json([
-            'message' => 'This user has no old bookings',
-            'bookings' => []
+            'message' => 'These are all old bookings for this user',
+            'bookings' => $bookings
         ], 200);
     }
 
-    return response()->json([
-        'message' => 'These are all old bookings for this user',
-        'bookings' => $bookings
-    ], 200);
-}
-public function getCurrentBookings()
-{
-    $user = Auth::user();
 
-    $bookings = Booking::where('user_id', $user->id)
-        ->where('end_date', '>=', now())
-        ->where('start_date','<=',now())
-        ->get()
-        ->map(function ($booking) {
-            return [
-                'booking_id' => $booking->id,
-                'property_id' => $booking->property_id,
-                'user_id' => $booking->user_id,
-                'start_date' => $booking->start_date,
-                'end_date' => $booking->end_date,
-                'is_deleted' => $booking->trashed()
-            ];
-        });
+    public function getCurrentBookings()
+    {
+        $user = Auth::user();
 
-    if ($bookings->isEmpty()) {
+        $bookings = Booking::where('user_id', $user->id)
+            ->where('end_date', '>=', now())
+            ->where('start_date', '<=', now())
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'booking_id' => $booking->id,
+                    'property_id' => $booking->property_id,
+                    'user_id' => $booking->user_id,
+                    'start_date' => $booking->start_date,
+                    'end_date' => $booking->end_date,
+                    'is_deleted' => $booking->trashed()
+                ];
+            });
+
+        if ($bookings->isEmpty()) {
+            return response()->json([
+                'message' => 'This user has no current bookings',
+                'bookings' => []
+            ], 200);
+        }
+
         return response()->json([
-            'message' => 'This user has no current bookings',
-            'bookings' => []
+            'message' => 'These are all current bookings for this user',
+            'bookings' => $bookings
         ], 200);
     }
 
-    return response()->json([
-        'message' => 'These are all current bookings for this user',
-        'bookings' => $bookings
-    ], 200);
-}
-public function getFutureBookings()
-{
-    $user = Auth::user();
 
-    $bookings = Booking::where('user_id', $user->id)
-        ->where('start_date','>',now())
-        ->get()
-        ->map(function ($booking) {
-            return [
-                'booking_id' => $booking->id,
-                'property_id' => $booking->property_id,
-                'user_id' => $booking->user_id,
-                'start_date' => $booking->start_date,
-                'end_date' => $booking->end_date,
-                'is_deleted' => $booking->trashed()
-            ];
-        });
+    public function getFutureBookings()
+    {
+        $user = Auth::user();
 
-    if ($bookings->isEmpty()) {
+        $bookings = Booking::where('user_id', $user->id)
+            ->where('start_date', '>', now())
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'booking_id' => $booking->id,
+                    'property_id' => $booking->property_id,
+                    'user_id' => $booking->user_id,
+                    'start_date' => $booking->start_date,
+                    'end_date' => $booking->end_date,
+                    'is_deleted' => $booking->trashed()
+                ];
+            });
+
+        if ($bookings->isEmpty()) {
+            return response()->json([
+                'message' => 'This user has no future bookings',
+                'bookings' => []
+            ], 200);
+        }
+
         return response()->json([
-            'message' => 'This user has no future bookings',
-            'bookings' => []
+            'message' => 'These are all future bookings for this user',
+            'bookings' => $bookings
         ], 200);
     }
 
-    return response()->json([
-        'message' => 'These are all future bookings for this user',
-        'bookings' => $bookings
-    ], 200);
-}
-public function getCurrentAndFutureBookings()
-{
-    $user = Auth::user();
 
-    $bookings = Booking::where('user_id', $user->id)
-        ->where('end_date','>=',now())
-        ->get()
-        ->map(function ($booking) {
-            return [
-                'booking_id' => $booking->id,
-                'property_id' => $booking->property_id,
-                'user_id' => $booking->user_id,
-                'start_date' => $booking->start_date,
-                'end_date' => $booking->end_date,
-                'is_deleted' => $booking->trashed()
-            ];
-        });
+    public function getCurrentAndFutureBookings()
+    {
+        $user = Auth::user();
 
-    if ($bookings->isEmpty()) {
+        $bookings = Booking::where('user_id', $user->id)
+            ->where('end_date', '>=', now())
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'booking_id' => $booking->id,
+                    'property_id' => $booking->property_id,
+                    'user_id' => $booking->user_id,
+                    'start_date' => $booking->start_date,
+                    'end_date' => $booking->end_date,
+                    'is_deleted' => $booking->trashed()
+                ];
+            });
+
+        if ($bookings->isEmpty()) {
+            return response()->json([
+                'message' => 'This user has no future bookings',
+                'bookings' => []
+            ], 200);
+        }
+
         return response()->json([
-            'message' => 'This user has no future bookings',
-            'bookings' => []
+            'message' => 'These are all future bookings for this user',
+            'bookings' => $bookings
         ], 200);
     }
-
-    return response()->json([
-        'message' => 'These are all future bookings for this user',
-        'bookings' => $bookings
-    ], 200);
-}
-
 }

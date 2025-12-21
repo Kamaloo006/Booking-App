@@ -97,7 +97,6 @@ class PropertyController extends Controller
         ], 200);
     }
 
-    // تزبيط الفلترة مع اكتر من وحدة
 
 
     public function addImages(Request $request, $property_id)
@@ -175,23 +174,31 @@ class PropertyController extends Controller
 
     public function setMainImage($property_id, $image_id)
     {
-        $property = Property::findOrFail($property_id);
-        $this->authorize('modifyImages', $property);
+        try {
 
-        $image = PropertyImage::where('property_id', $property_id)
-            ->where('id', $image_id)
-            ->firstOrFail();
+            $property = Property::findOrFail($property_id);
+            $this->authorize('modifyImages', $property);
 
-        // Reset all images
-        PropertyImage::where('property_id', $property_id)->update(['is_main' => false]);
+            $image = PropertyImage::where('property_id', $property_id)
+                ->where('id', $image_id)
+                ->firstOrFail();
 
-        // Set this one as main
-        $image->update(['is_main' => true]);
+            // Reset all images
+            PropertyImage::where('property_id', $property_id)->update(['is_main' => false]);
 
-        return response()->json([
-            'message' => 'Main image updated.',
-            'property' => $property->load('images'),
-        ]);
+            // Set this one as main
+            $image->update(['is_main' => true]);
+
+            return response()->json([
+                'message' => 'Main image updated.',
+                'property' => $property->load('images'),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => 'property not found'
+            ], 404);
+        }
     }
 
 
@@ -278,13 +285,14 @@ class PropertyController extends Controller
             'properties' => $properties
         ], 200);
     }
-    public function getPropertiesByOwner(){
-       $user=Auth::user();
-        $this->authorize('showByOwner',$user);
-        $properties=$user->properties()->with('Features','images')->get();
+    public function getPropertiesByOwner()
+    {
+        $user = Auth::user();
+        $this->authorize('showByOwner', $user);
+        $properties = $user->properties()->with('Features', 'images')->get();
         return response()->json([
-            'message'=>'These all properties for this owner',
-            'properties'=>$properties
-        ],200);
+            'message' => 'These all properties for this owner',
+            'properties' => $properties
+        ], 200);
     }
 }
