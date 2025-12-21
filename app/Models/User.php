@@ -73,4 +73,7 @@ class User extends Authenticatable
     {
         return $this->id_img ? url('storage/' . $this->id_img) : null;
     }
+    public function favorites(){
+        return $this->hasMany(Favorite::class);
+    }
 }

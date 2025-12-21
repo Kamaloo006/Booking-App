@@ -74,10 +74,5 @@ class PropertyPolicy
     {
         return $user->id === $property->user_id;
     }
-    public function showByOwner(User $user,Property $property){
-        if($user->role=='renter'){
-            return Response::deny('This feature is not available for renter');
-        }
-        return Response::allow();
-    }
+    
 }

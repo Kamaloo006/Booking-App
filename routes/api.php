@@ -53,6 +53,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // add new features to property or update them
     Route::post('/properties/{property_id}/features', [PropertyController::class, 'storeFeatures'])->middleware('ownerOnly');
+    //add property to favorite
+    Route::post('/property/favorite/{property}',[PropertyController::class,'addPropertyToFavorite']);
+    //remove property from favorite
+    Route::delete('/property/rem_favorite/{property}',[PropertyController::class,'removeFromFavorite']);
+    // show my favorites
+     Route::get('/favorite',[PropertyController::class,'getFavorites']);
+     //toogle
+     Route::post('/favorites/{property}/toggle', [PropertyController::class, 'toggleFavorite']);
 
     //--------------------------------------|| Bookings
 
@@ -70,7 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/current', [BookingController::class, 'getCurrentBookings']);
     Route::get('/bookings/future', [BookingController::class, 'getFutureBookings']);
 
-
+    //This Routes for rating the booking
     Route::post('/rating/{booking}',[BookingController::class,'addRating']);
      Route::put('/updaterating/{booking}',[BookingController::class,'updateRating']);
 
