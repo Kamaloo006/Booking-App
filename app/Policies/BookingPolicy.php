@@ -55,9 +55,7 @@ class BookingPolicy
         if ($user->id != $booking->user_id) {
             return Response::deny('This booking does not belong to you');
         }
-        if (now()->greaterThanOrEqualTo($booking->start_date)) {
-            return Response::deny('You cannot delete it because it has already started');
-        }
+        
         return Response::allow();
     }
 

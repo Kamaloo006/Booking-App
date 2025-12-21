@@ -262,11 +262,11 @@ class PropertyController extends Controller
             }
 
             if ($request->filled('bathrooms')) {
-                $f->where('bathrooms', '>=', $request->bathrooms);
+                $f->where('bathrooms', '=', $request->bathrooms);
             }
 
             if ($request->filled('kitchens')) {
-                $f->where('kitchens', '>=', $request->kitchens);
+                $f->where('kitchens', '=', $request->kitchens);
             }
 
             if ($request->filled('min_area')) {
@@ -285,6 +285,7 @@ class PropertyController extends Controller
             'properties' => $properties
         ], 200);
     }
+
     public function getPropertiesByOwner()
     {
         $user = Auth::user();
@@ -293,6 +294,70 @@ class PropertyController extends Controller
         return response()->json([
             'message' => 'These all properties for this owner',
             'properties' => $properties
+        ], 200);
+    }
+    // public function addPropertyToFavorite(Property $property){
+    // $user=Auth::user();
+    //  $exists= $user->favorites()->where('property_id',$property->id)->exists();
+    //  if($exists){
+    //     return response()->json([
+    //         'message'=>'property already in favorites'
+    //     ],409);
+    //  }
+    //   $user->favorites()->create([
+    //         'property_id' => $property->id
+    //     ]);
+    // return response()->json([
+    //     'message'=>'Property added to favorites'
+    // ],201);
+
+    // }
+    // public function removeFromFavorite(Property $property){
+    // $user=Auth::user();
+    // $favorite=$user->favorites()->where('property_id',$property->id)->first();
+    // if(!$favorite){
+    //     return response()->json([
+    //         'message'=>'favourite not found'
+    //     ],404);
+    // }
+
+    // $favorite->delete();
+    // return response()->json([
+    //     'message'=>'Property removed from favorites'
+    // ],200);
+    // }
+    public function toggleFavorite(Property $property)
+    {
+        $user = Auth::user();
+
+        $favorite = $user->favorites()
+            ->where('property_id', $property->id)
+            ->first();
+
+        if ($favorite) {
+            $favorite->delete();
+
+            return response()->json([
+                'message' => 'Property removed from favorites'
+            ], 200);
+        }
+        $user->favorites()->create([
+            'property_id' => $property->id
+        ]);
+
+        return response()->json([
+            'message' => 'Property added to favorites'
+        ], 201);
+    }
+
+
+    public function getFavorites()
+    {
+        $user = Auth::user();
+        $favorites = $user->favorites()->with('property.images', 'property.features')->get();
+        return response()->json([
+            'message' => 'Operation Completed Successfully',
+            'favorite' => $favorites
         ], 200);
     }
 }
