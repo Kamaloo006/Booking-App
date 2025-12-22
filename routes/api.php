@@ -30,7 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
     //--------------------------------------|| Properties
     // create new property
     Route::post('/property', [PropertyController::class, 'store'])->middleware('ownerOnly');
-
+     //get property
+     Route::get('/show/property/{property}',[PropertyController::class,'getProperty']);
     //  show property by id
     Route::get("/property/{property_id}", [PropertyController::class, 'showProperty']);
     // Update property informations
