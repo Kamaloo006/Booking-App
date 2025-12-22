@@ -24,6 +24,10 @@ return new class extends Migration
 
             $table->boolean('is_available')->default(true);
 
+            $table->integer('rooms')->nullable();
+            $table->integer('bathrooms')->nullable();
+            $table->integer('kitchens')->nullable();
+            $table->integer('area')->nullable();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
         });

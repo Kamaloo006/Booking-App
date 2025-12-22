@@ -30,6 +30,11 @@ class UpdatePropertyRequest extends FormRequest
             'category' => 'sometimes|in:house,villa,apartment',
             'name' => 'sometimes|string|max:255',
 
+            'area' => 'sometimes|integer|min:50',
+            'bathrooms' => 'sometimes|integer|min:1',
+            'kitchens' => 'sometimes|integer|min:1',
+            'rooms' => 'sometimes|integer|min:1'
+
             // 'images' => 'sometimes|array|min:1',
             // 'images.*' => "image|mimes:jpeg,png,jpg,gif|max:5120",
 

@@ -39,13 +39,19 @@ class PropertyController extends Controller
             'description'   => $validated['description'],
             'category'      => $validated['category'],
             'is_available'  => $validated['is_available'],
+
+            // features
+            'rooms'         => $validated['rooms'],
+            'bathrooms'     => $validated['bathrooms'],
+            'kitchens'      => $validated['kitchens'],
+            'area'          => $validated['area'],
+
             'user_id'       => $request->user()->id,
         ]);
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $img) {
-
-                $path = $img->store('properties/' . $property->id, 'public');
+                $path = $img->store("properties/{$property->id}", 'public');
 
                 PropertyImage::create([
                     'property_id' => $property->id,
@@ -56,46 +62,30 @@ class PropertyController extends Controller
         }
 
         return response()->json([
-            'message' => 'Property created successfully',
+            'message'  => 'Property created successfully',
             'property' => $property->load('images')
         ], 201);
     }
 
 
 
-    // update function not working || fix it and add delete function to
-    // add features table to the property and link it
     public function updateInfo($property_id, UpdatePropertyRequest $request)
     {
 
-        $validatedData = $request->validated();
         $property = Property::findOrFail($property_id);
         $this->authorize('update', $property);
+
+        $validatedData = $request->validated();
 
         $property->update($validatedData);
 
-        return response()->json(['message' => 'property informations updated successfuly', 'property' => $property], 200);
-    }
-
-    public function storeFeatures(StorePropertyFeaturesReqeust $request, $property_id)
-    {
-        $property = Property::findOrFail($property_id);
-        $this->authorize('update', $property);
-        $validatedData = $request->validated();
-
-        if ($property->user_id !== Auth::user()->id) {
-            return response()->json(['message' => 'you not authorized to add features'], 403);
-        }
-
-        if ($property->features) $property->features->update($validatedData);
-
-        $property->features()->create($validatedData);
-
         return response()->json([
-            'message' => 'Features saved successfully.',
-            'property' => $property->load('features'),
+            'message'  => 'Property updated successfully',
+            'property' => $property->fresh()->load('images')
         ], 200);
     }
+
+
 
 
 
@@ -225,15 +215,16 @@ class PropertyController extends Controller
     }
 
 
+
+
     public function filterProperties(Request $request)
     {
-        $query = Property::with(['user', 'features']);
+        $query = Property::with(['user', 'images']);
 
         if ($request->filled('city')) {
             $query->where('city', $request->city);
         }
 
-        // category = villa
         if ($request->filled('governorate')) {
             $query->where('governorate', $request->governorate);
         }
@@ -254,48 +245,50 @@ class PropertyController extends Controller
             $query->where('is_available', $request->is_available);
         }
 
-        // features filter
-        $query->whereHas('features', function ($f) use ($request) {
+        // features
+        if ($request->filled('rooms')) {
+            $query->where('rooms', $request->rooms);
+        }
 
-            if ($request->filled('rooms')) {
-                $f->where('rooms', '>=', $request->rooms);
-            }
+        if ($request->filled('bathrooms')) {
+            $query->where('bathrooms', $request->bathrooms);
+        }
 
-            if ($request->filled('bathrooms')) {
-                $f->where('bathrooms', '=', $request->bathrooms);
-            }
+        if ($request->filled('kitchens')) {
+            $query->where('kitchens', $request->kitchens);
+        }
 
-            if ($request->filled('kitchens')) {
-                $f->where('kitchens', '=', $request->kitchens);
-            }
+        if ($request->filled('min_area')) {
+            $query->where('area', '>=', $request->min_area);
+        }
 
-            if ($request->filled('min_area')) {
-                $f->where('area', '>=', $request->min_area);
-            }
-
-            if ($request->filled('max_area')) {
-                $f->where('area', '<=', $request->max_area);
-            }
-        });
-
-        $properties = $query->get();
+        if ($request->filled('max_area')) {
+            $query->where('area', '<=', $request->max_area);
+        }
 
         return response()->json([
             'message' => 'Filtered properties retrieved successfully.',
-            'properties' => $properties
-        ], 200);
+            'properties' => $query->get()
+        ]);
     }
+
 
     public function getPropertiesByOwner()
     {
         $user = Auth::user();
         $this->authorize('showByOwner', $user);
-        $properties = $user->properties()->with('Features', 'images')->get();
+
+        $properties = $user->properties()
+            ->with('images')
+            ->get();
+
         return response()->json([
             'message' => 'These all properties for this owner',
             'properties' => $properties
         ], 200);
     }
+
+
     public function getProperty(Property $property){
         $sum=0;
         $count=0;
@@ -345,6 +338,8 @@ class PropertyController extends Controller
     //     'message'=>'Property removed from favorites'
     // ],200);
     // }
+
+
     public function toggleFavorite(Property $property)
     {
         $user = Auth::user();
@@ -373,7 +368,7 @@ class PropertyController extends Controller
     public function getFavorites()
     {
         $user = Auth::user();
-        $favorites = $user->favorites()->with('property.images', 'property.features')->get();
+        $favorites = $user->favorites()->with('property.images')->get();
         return response()->json([
             'message' => 'Operation Completed Successfully',
             'favorite' => $favorites
