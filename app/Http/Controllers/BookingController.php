@@ -52,7 +52,7 @@ class BookingController extends Controller
         $validatedData['property_id'] = $property->id;
         $validatedData['card_number'] = substr($validatedData['card_number'], -4);
         $booking = Booking::create($validatedData);
-$booking = Booking::with('property')->find($booking->id);
+        $booking = Booking::with('property')->find($booking->id);
         return response()->json([
             'message' => 'Operation Completed Successfully',
             'booking' => $booking
@@ -85,7 +85,8 @@ $booking = Booking::with('property')->find($booking->id);
             return response()->json([
                 'message' => 'This property is already booked for the selected dates'
             ], 422);
-        }$days = $request_start->diffInDays($request_end) + 1;
+        }
+        $days = $request_start->diffInDays($request_end) + 1;
         $total_price = $property->price_per_day * $days;
         $validatedData['price']       = $total_price;
         $validatedData['user_id']     = $request->user()->id;
@@ -116,7 +117,7 @@ $booking = Booking::with('property')->find($booking->id);
     public function getAllBookings(Request $request)
     {
         $user = $request->user();
-        $bookings = Booking::withTrashed()->with(['property','rating'])->where('user_id', $user->id)->get()->map(function ($booking) {
+        $bookings = Booking::withTrashed()->with(['property', 'rating'])->where('user_id', $user->id)->get()->map(function ($booking) {
             return [
                 'booking_id' => $booking->id,
                 'property_id' => $booking->property_id,
@@ -126,7 +127,7 @@ $booking = Booking::with('property')->find($booking->id);
                 'price'    => $booking->price,
                 'is_deleted' => $booking->trashed(),
                 'property' => $booking->property,
-                'rating'=>$booking->rating ??'This booking has no rating yet'
+                'rating' => $booking->rating ?? 'This booking has no rating yet'
             ];
         });
         if ($bookings->isEmpty()) {
@@ -135,7 +136,7 @@ $booking = Booking::with('property')->find($booking->id);
                 'bookings' => []
             ], 200);
         }
-        
+
         return response()->json([
             'message' => "These are all bookings related to this user",
             'bookings' => $bookings
@@ -176,7 +177,8 @@ $booking = Booking::with('property')->find($booking->id);
             'message' => 'Operation Completed Successfully',
             'rating' => $booking->rating
         ], 200);
-    }public function getCancelledBookings()
+    }
+    public function getCancelledBookings()
     {
         $user = Auth::user();
         $bookings = Booking::onlyTrashed()->with('property')->where('user_id', $user->id)->get()->map(function ($booking) {
@@ -187,7 +189,7 @@ $booking = Booking::with('property')->find($booking->id);
                 'start_date' => $booking->start_date,
                 'end_date' => $booking->end_date,
                 'is_deleted' => $booking->trashed(),
-                 'property' => $booking->property 
+                'property' => $booking->property
             ];
         });
         if ($bookings->isEmpty()) {
@@ -207,7 +209,7 @@ $booking = Booking::with('property')->find($booking->id);
     {
         $user = Auth::user();
 
-        $bookings = Booking::with(['property','rating'])->where('user_id', $user->id)
+        $bookings = Booking::with(['property', 'rating'])->where('user_id', $user->id)
             ->where('end_date', '<', now())
             ->get()
             ->map(function ($booking) {
@@ -218,8 +220,8 @@ $booking = Booking::with('property')->find($booking->id);
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property,
-                     'rating'=>$booking->rating ??'This booking has no rating yet'
+                    'property' => $booking->property,
+                    'rating' => $booking->rating ?? 'This booking has no rating yet'
                 ];
             });
 
@@ -253,8 +255,8 @@ $booking = Booking::with('property')->find($booking->id);
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property
-                     
+                    'property' => $booking->property
+
                 ];
             });
 
@@ -287,7 +289,7 @@ $booking = Booking::with('property')->find($booking->id);
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'is_deleted' => $booking->trashed(),
-                       'property' => $booking->property
+                    'property' => $booking->property
 
                 ];
             });
@@ -297,7 +299,8 @@ $booking = Booking::with('property')->find($booking->id);
                 'message' => 'This user has no future bookings',
                 'bookings' => []
             ], 200);
-        }return response()->json([
+        }
+        return response()->json([
             'message' => 'These are all future bookings for this user',
             'bookings' => $bookings
         ], 200);
@@ -319,8 +322,8 @@ $booking = Booking::with('property')->find($booking->id);
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property,
-                
+                    'property' => $booking->property,
+
                 ];
             });
 
