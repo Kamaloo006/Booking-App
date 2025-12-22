@@ -31,7 +31,11 @@ class StorePropertyRequest extends FormRequest
             'images' => 'required|array|min:1|max:4',
             'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
             'is_available' => 'nullable|boolean',
-            'category' => 'required|in:house,villa,apartment'
+            'category' => 'required|in:house,villa,apartment',
+            'area' => 'required|integer|min:50',
+            'bathrooms' => 'required|integer|min:1',
+            'kitchens' => 'required|integer|min:1',
+            'rooms' => 'required|integer|min:1'
         ];
     }
 }

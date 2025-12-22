@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Property extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'price_per_day', 'city', 'user_id', 'description', 'governorate', 'category', 'is_available'];
+    protected $fillable = ['name', 'price_per_day', 'city', 'user_id', 'description', 'governorate', 'category', 'is_available', 'rooms', 'kitchens', 'area', 'bathrooms'];
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -44,7 +44,8 @@ class Property extends Model
     {
         return $this->hasOne(PropertyImage::class)->where('is_main', true);
     }
-    public function favorites(){
+    public function favorites()
+    {
         return $this->hasMany(Favorite::class);
     }
 }

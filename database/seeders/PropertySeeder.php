@@ -11,10 +11,8 @@ class PropertySeeder extends Seeder
 {
     public function run(): void
     {
-        // Clean previous properties
         Property::query()->delete();
 
-        // Get all owner users
         $owners = User::where('role', 'owner')->get();
 
         if ($owners->isEmpty()) {
@@ -29,31 +27,28 @@ class PropertySeeder extends Seeder
                 'governorate' => 'Damascus',
                 'city' => 'Mazzeh',
                 'price_per_day' => 150,
-                'description' => 'A sophisticated villa crafted for modern lifestyles, showcasing sleek architecture, tasteful décor, and thoughtfully designed living areas. Ideal for residents seeking both luxury and comfort in a prime location.',
-                'features' => [
-                    'rooms' => 5,
-                    'bathrooms' => 4,
-                    'kitchens' => 2,
-                    'area' => 350,
-                ],
+                'description' => 'A sophisticated villa crafted for modern lifestyles, featuring elegant architectural details, expansive living spaces, and a private outdoor area designed for relaxation',
+                'rooms' => 5,
+
+                'bathrooms' => 4,
+                'kitchens' => 1,
+                'area' => 350,
                 'folder' => 'property_1',
-                'is_available' => true
+                'is_available' => true,
             ],
             [
-                'name' => 'Modern Apartment ',
+                'name' => 'Modern Apartment',
                 'category' => 'apartment',
                 'governorate' => 'Aleppo',
                 'city' => 'Azaz',
                 'price_per_day' => 70,
-                'description' => 'An exquisite residence that blends elegance with functionality, offering open-plan spaces, premium materials, and panoramic views. This apartment provides a serene atmosphere while maintaining a contemporary, upscale feel.',
-                'features' => [
-                    'rooms' => 3,
-                    'bathrooms' => 2,
-                    'kitchens' => 1,
-                    'area' => 120,
-                ],
+                'description' => 'A modern apartment designed with contemporary elegance, offering a well-balanced combination of style and functionality.',
+                'rooms' => 3,
+                'bathrooms' => 2,
+                'kitchens' => 1,
+                'area' => 120,
                 'folder' => 'property_2',
-                'is_available' => true
+                'is_available' => true,
             ],
             [
                 'name' => 'Family House',
@@ -61,15 +56,14 @@ class PropertySeeder extends Seeder
                 'governorate' => 'Latakia',
                 'city' => 'Jableh',
                 'price_per_day' => 90,
-                'description' => 'A luxurious property designed for refined living, featuring modern finishes, spacious interiors, and abundant natural light. Every detail reflects comfort, style, and sophistication. Perfect for those who appreciate high-end urban living.',
-                'features' => [
-                    'rooms' => 4,
-                    'bathrooms' => 2,
-                    'kitchens' => 1,
-                    'area' => 200,
-                ],
+                'description' => 'A perfect family house with a spacious and practical layout, thoughtfully designed to accommodate everyday living and family gatherings',
+                'rooms' => 4,
+
+                'bathrooms' => 2,
+                'kitchens' => 1,
+                'area' => 200,
                 'folder' => 'property_3',
-                'is_available' => true
+                'is_available' => true,
             ],
             [
                 'name' => 'Beachfront Apartment',
@@ -77,13 +71,12 @@ class PropertySeeder extends Seeder
                 'governorate' => 'Tartus',
                 'city' => 'Safita',
                 'price_per_day' => 110,
-                'description' => 'An exquisite residence that blends elegance with functionality, offering open-plan spaces, premium materials, and panoramic views. This apartment provides a serene atmosphere while maintaining a contemporary, upscale feel.',
-                'features' => [
-                    'rooms' => 2,
-                    'bathrooms' => 2,
-                    'kitchens' => 1,
-                    'area' => 100,
-                ],
+                'description' => 'An apartment offering a stunning sea view that creates a calm and refreshing living experience.',
+                'rooms' => 2,
+
+                'bathrooms' => 2,
+                'kitchens' => 1,
+                'area' => 100,
                 'folder' => 'property_4',
                 'is_available' => true,
             ],
@@ -93,41 +86,39 @@ class PropertySeeder extends Seeder
                 'governorate' => 'Idlib',
                 'city' => 'Saraqib',
                 'price_per_day' => 130,
-                'description' => 'A luxurious property designed for refined living, featuring modern finishes, spacious interiors, and abundant natural light. Every detail reflects comfort, style, and sophistication. Perfect for those who appreciate high-end urban living.',
-                'features' => [
-                    'rooms' => 4,
-                    'bathrooms' => 3,
-                    'kitchens' => 1,
-                    'area' => 280,
-                ],
+                'description' => 'A spacious villa with countryside charm, blending traditional character with modern comfort',
+                'rooms' => 6,
+
+                'bathrooms' => 3,
+                'kitchens' => 1,
+                'area' => 280,
                 'folder' => 'property_5',
                 'is_available' => false,
             ],
         ];
 
         foreach ($properties as $index => $item) {
-
-            // Assign owner (rotates if more than one)
             $owner = $owners[$index % $owners->count()];
 
             $property = Property::create([
-                'name' => $item['name'],
-                'category' => $item['category'],
-                'governorate' => $item['governorate'],
-                'city' => $item['city'],
+                'name'          => $item['name'],
+                'category'      => $item['category'],
+                'governorate'   => $item['governorate'],
+                'city'          => $item['city'],
                 'price_per_day' => $item['price_per_day'],
-                'description' => $item['description'],
-                'is_available' => $item['is_available'],
-                'user_id' => $owner->id,
+                'description'   => $item['description'],
+                'is_available'  => $item['is_available'],
+                'rooms'         => $item['rooms'],
+                'bathrooms'     => $item['bathrooms'],
+                'kitchens'      => $item['kitchens'],
+                'area'          => $item['area'],
+                'user_id'       => $owner->id,
             ]);
 
-            // Create features
-            $property->features()->create($item['features']);
-            // Add images (1 main + 3 interiors)
+            // Images
             $basePath = "demo/properties/{$item['folder']}";
 
             if (Storage::disk('public')->exists($basePath)) {
-
                 $property->images()->create([
                     'image_path' => "$basePath/main.jpg",
                     'is_main' => true,
@@ -144,6 +135,6 @@ class PropertySeeder extends Seeder
             }
         }
 
-        $this->command->info('5 default properties created successfully!');
+        $this->command->info('Properties seeded successfully!');
     }
 }

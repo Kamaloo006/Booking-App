@@ -51,14 +51,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // delete property and its images
     Route::delete('/property/{id}', [PropertyController::class, 'destroy'])->middleware('ownerOnly');
 
-    // add new features to property or update them
-    Route::post('/properties/{property_id}/features', [PropertyController::class, 'storeFeatures'])->middleware('ownerOnly');
+
+
     //add property to favorite
     Route::post('/property/favorite/{property}', [PropertyController::class, 'addPropertyToFavorite']);
     //remove property from favorite
-    Route::delete('/property/rem_favorite/{property}', [PropertyController::class, 'removeFromFavorite']);
+    Route::delete('/property/favorite/{property}', [PropertyController::class, 'removeFromFavorite']);
+
     // show my favorites
-    Route::get('/favorite', [PropertyController::class, 'getFavorites']);
+    Route::get('/favorites', [PropertyController::class, 'getFavorites']);
     //toogle
     Route::post('/favorites/{property}/toggle', [PropertyController::class, 'toggleFavorite']);
 
@@ -86,6 +87,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
+
+
 
 
 
