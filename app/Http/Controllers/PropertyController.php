@@ -296,6 +296,25 @@ class PropertyController extends Controller
             'properties' => $properties
         ], 200);
     }
+    public function getProperty(Property $property){
+        $sum=0;
+        $count=0;
+      foreach($property->bookings as $booking){
+        if($booking->rating){
+         $sum+=$booking->rating->stars;
+         $count++;
+        }
+        $average=$sum/$count;
+      }
+    
+      
+    $property->load(['features', 'images']);
+      return response()->json([
+        'message'=>'Operation Completed Successfully',
+        'information about property'=> $property,
+        'totalRating'=>$average
+      ],200);
+    }
     // public function addPropertyToFavorite(Property $property){
     // $user=Auth::user();
     //  $exists= $user->favorites()->where('property_id',$property->id)->exists();
