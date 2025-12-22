@@ -22,9 +22,10 @@ class UpdateBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_date' =>'nullable|date|after_or_equal:today',
-            'end_date' =>'nullable|date|after:start_date',
-            'payment_status' =>'nullable|in:pending,paid,failed,refunded,cancelled'
+             'start_date' => 'sometimes|date|after_or_equal:today',
+            'end_date' => 'sometimes|date|after:start_date',
+            'card_number' => 'sometimes|string|min:4|regex:/^[0-9]+$/',
+            'billing_address' => 'sometimes|string|max:255',       
         ];
     }
 }

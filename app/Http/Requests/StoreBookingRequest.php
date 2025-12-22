@@ -27,6 +27,11 @@ class StoreBookingRequest extends FormRequest
             // 'start_date' => 'required|date|after_or_equal:today',
             // 'end_date' => 'required|date|after:start_date',
             'card_number' => 'required|string|min:12|max:19|regex:/^[0-9]+$/',
+    
+           
+            'start_date' => 'required|date|after_or_equal:today',
+            'end_date' => 'required|date|after:start_date',
+            'card_number' => 'required|string|min:4|regex:/^[0-9]+$/',
 
             'billing_address' => 'required|string|max:255'
         ];
