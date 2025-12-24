@@ -41,9 +41,9 @@ class BookingPolicy
         if ($user->id != $booking->user_id) {
             return Response::deny('This booking does not belong to you');
         }
-        if (now()->greaterThanOrEqualTo($booking->start_date)) {
-            return Response::deny('You cannot modify it because it has already started');
-        }
+        // if (now()->greaterThanOrEqualTo($booking->start_date)) {
+        //     return Response::deny('You cannot modify it because it has already started');
+        // }
         return Response::allow();
     }
 
@@ -55,10 +55,10 @@ class BookingPolicy
         if ($user->id != $booking->user_id) {
             return Response::deny('This booking does not belong to you');
         }
-       if (Carbon::parse($booking->end_date)->lt(Carbon::today())) {
-        return Response::deny('This booking already finished, you cannot delete it');
-    }
-        
+        if (Carbon::parse($booking->end_date)->lt(Carbon::today())) {
+            return Response::deny('This booking already finished, you cannot delete it');
+        }
+
         return Response::allow();
     }
 
@@ -83,9 +83,9 @@ class BookingPolicy
         if ($booking->user_id != $user->id) {
             return Response::deny('This booking does not belong to you');
         }
-        if (Carbon::parse($booking->end_date)->isFuture()) {
-            return Response::deny('You cannot rate it until it has finished');
-        }
+        // if (Carbon::parse($booking->end_date)->isFuture()) {
+        //     return Response::deny('You cannot rate it until it has finished');
+        // }
         if ($booking->rating) {
             return Response::deny('This booking has already been rated');
         }

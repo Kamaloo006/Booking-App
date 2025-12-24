@@ -27,10 +27,7 @@ class Property extends Model
             ->orderBy('id');
     }
 
-    public function features()
-    {
-        return $this->hasOne(Feature::class);
-    }
+
 
     public function getMainImageUrlAttribute()
     {

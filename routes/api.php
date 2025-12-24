@@ -29,28 +29,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //--------------------------------------|| Properties
     // create new property
-    Route::post('/property', [PropertyController::class, 'store'])->middleware('ownerOnly');
-     //get property
-     Route::get('/show/property/{property}',[PropertyController::class,'getProperty']);
+    Route::post('/property', [PropertyController::class, 'store']);
+
+    //get property
+    Route::get('/show/property/{property}', [PropertyController::class, 'getProperty']);
+
     //  show property by id
     Route::get("/property/{property_id}", [PropertyController::class, 'showProperty']);
-    // Update property informations
-    Route::put('/properties/{id}', [PropertyController::class, 'updateInfo'])->middleware('ownerOnly');
 
-    // add new image to property
-    Route::post('/properties/{id}/images', [PropertyController::class, 'addImages'])->middleware('ownerOnly');
-
-    // replace image in property
-    Route::post('/properties/{id}/images/{image_id}/replace', [PropertyController::class, 'replaceImage'])->middleware('ownerOnly');
-
-    //  delete image in property
-    Route::delete('/properties/{id}/images/{image_id}', [PropertyController::class, 'deleteImage'])->middleware('ownerOnly');
-
-    // set main image in property
-    Route::put('/properties/{id}/images/{image_id}/set-main', [PropertyController::class, 'setMainImage'])->middleware('ownerOnly');
-
-    // delete property and its images
-    Route::delete('/property/{id}', [PropertyController::class, 'destroy'])->middleware('ownerOnly');
 
 
 
@@ -90,7 +76,52 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('properties', [PropertyController::class, 'filterProperties']);
 
 
+    // -------------------------------- || Owner functions
 
+
+    Route::middleware('ownerOnly')->group(function () {
+
+
+        // Update property informations
+        Route::put('/properties/{id}', [PropertyController::class, 'updateInfo']);
+
+        // add new image to property
+        Route::post('/properties/{id}/images', [PropertyController::class, 'addImages']);
+
+        // replace image in property
+        Route::post('/properties/{id}/images/{image_id}/replace', [PropertyController::class, 'replaceImage']);
+
+        //  delete image in property
+        Route::delete('/properties/{id}/images/{image_id}', [PropertyController::class, 'deleteImage']);
+
+        // set main image in property
+        Route::put('/properties/{id}/images/{image_id}/set-main', [PropertyController::class, 'setMainImage']);
+
+        // delete property and its images
+        Route::delete('/property/{id}', [PropertyController::class, 'destroy']);
+
+
+
+        Route::get('owner/properties/pendingBookings', [BookingController::class, 'getAllPendingBookings']);
+        Route::get('owner/properties/acceptedBookings', [BookingController::class, 'getAcceptedBookings']);
+        Route::get('owner/properties/rejectedBookings', [BookingController::class, 'getRejectedBookings']);
+        Route::post('owner/properties/bookings/{booking_id}/accept', [BookingController::class, 'acceptBooking']);
+        Route::post('owner/properties/bookings/{booking_id}/reject', [BookingController::class, 'rejectBooking']);
+
+
+        // ---------------------------------- || Owner Update Functions
+
+        Route::get('owner/properties/pendingEditBookings', [BookingController::class, 'getPendingEditBookings']);
+        Route::post('owner/properties/bookings/{booking_id}/accept_edit', [BookingController::class, 'acceptEdit']);
+        Route::post('owner/properties/bookings/{booking_id}/reject_edit', [BookingController::class, 'rejectEdit']);
+
+
+        Route::get('/owner/properties/currentBookings', [BookingController::class, 'getOwnerCurrentBookings']);
+    });
+
+
+    Route::get('user/bookings/pending', [BookingController::class, 'getMyPendingBookings']);
+    Route::get('user/bookings/pending_edit', [BookingController::class, 'getMyPendingEditBookings']);
 
 
     // -------------------------------- || Admin Functions
