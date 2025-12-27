@@ -292,14 +292,10 @@ class BookingController extends Controller
         $isCurrent = $booking->start_date <= $today && $booking->end_date >= $today;
         $isFuture  = $booking->start_date > $today;
 
-        /*
-    |--------------------------------------------------------------------------
-    | تحديد التواريخ الجديدة حسب نوع الحجز
-    |--------------------------------------------------------------------------
-    */
+     
 
         if ($isCurrent) {
-            // ❌ ممنوع تعديل start_date
+            
             if ($request->has('start_date')) {
                 return response()->json([
                     'message' => 'Cannot edit start date for a current booking'
@@ -373,9 +369,6 @@ class BookingController extends Controller
             'booking' => $booking
         ]);
     }
-
-
-
 
     public function getPendingEditBookings()
     {
@@ -492,15 +485,6 @@ class BookingController extends Controller
         ], 200);
     }
 
-
-
-
-
-
-
-
-
-
     public function delete($booking_id)
     {
         $booking = Booking::findOrFail($booking_id);
@@ -548,59 +532,6 @@ class BookingController extends Controller
             'bookings' => $bookings
         ], 200);
     }
-
-
-
-    public function addRating(Request $request, Booking $booking)
-    {
-        $this->authorize('rate', $booking);
-        $request->validate([
-            'stars' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string'
-        ]);
-        $rating = $booking->rating()->create([
-            'stars' => $request->stars,
-            'comment' => $request->comment
-        ]);
-        return response()->json([
-            'message' => 'Operation Completed Successfully',
-            'rating' => $rating
-        ], 201);
-    }
-
-
-
-    public function updateRating(Request $request, Booking $booking)
-    {
-        $this->authorize('editrate', $booking);
-
-        $validateData = $request->validate([
-            'stars' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string'
-        ]);
-
-        if (!$booking->rating) {
-            return response()->json([
-                'message' => 'booking has no rating to update it'
-            ], 404);
-        }
-
-        // تحديث التقييم في قاعدة البيانات
-        $booking->rating()->update([
-            'stars' => $validateData['stars'],
-            'comment' => $validateData['comment'] ?? $booking->rating->comment
-        ]);
-
-        // إعادة تحميل العلاقة للحصول على البيانات المحدثة
-        $booking->load('rating');
-
-        return response()->json([
-            'message' => 'Operation Completed Successfully',
-            'rating' => $booking->rating
-        ], 200);
-    }
-
-
 
     public function getCancelledBookings()
     {

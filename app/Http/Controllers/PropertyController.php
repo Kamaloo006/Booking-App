@@ -20,7 +20,7 @@ class PropertyController extends Controller
 {
     use AuthorizesRequests;
 
-
+  //هي مكررة
     public function showProperty($property_id)
     {
         $property = Property::findOrFail($property_id);
@@ -291,22 +291,14 @@ class PropertyController extends Controller
 
     public function getProperty(Property $property)
     {
-        $sum = 0;
-        $count = 0;
-        foreach ($property->bookings as $booking) {
-            if ($booking->rating) {
-                $sum += $booking->rating->stars;
-                $count++;
-            }
-            $average = $sum / $count;
-        }
-
+      $rating= $property->rating()->first(); 
+    
 
         $property->load(['images']);
         return response()->json([
             'message' => 'Operation Completed Successfully',
             'information about property' => $property,
-            'totalRating' => $average
+            'Rating' => $rating
         ], 200);
     }
     // public function addPropertyToFavorite(Property $property){
@@ -373,6 +365,47 @@ class PropertyController extends Controller
         return response()->json([
             'message' => 'Operation Completed Successfully',
             'favorite' => $favorites
+        ], 200);
+    }
+    public function addRating(Request $request, Property $property)
+    {
+        $this->authorize('rate', $property);
+      
+        $request->validate([
+            'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+        $rating = $property->rating()->create([
+            'stars' => $request->stars,
+            'comment' => $request->comment,
+            'user_id'=>Auth::id()
+        ]);
+        return response()->json([
+            'message' => 'Operation Completed Successfully',
+            'rating' => $rating
+        ], 201);
+    }
+    
+    public function updateRating(Request $request, Property $property)
+    {
+        $this->authorize('editrate', $property);
+
+        $validateData = $request->validate([
+            'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+
+        
+        $property->rating()->update([
+            'stars' => $validateData['stars'],
+            'comment' => $validateData['comment'] ?? $property->rating->comment
+        ]);
+
+        $property->load('rating');
+
+        return response()->json([
+            'message' => 'Operation Completed Successfully',
+            'rating' => $property->rating
         ], 200);
     }
 }
