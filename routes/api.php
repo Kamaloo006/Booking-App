@@ -100,7 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // delete property and its images
         Route::delete('/property/{id}', [PropertyController::class, 'destroy']);
 
-
+    
 
         Route::get('owner/properties/pendingBookings', [BookingController::class, 'getAllPendingBookings']);
         Route::get('owner/properties/acceptedBookings', [BookingController::class, 'getAcceptedBookings']);
