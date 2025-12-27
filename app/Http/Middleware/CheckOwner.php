@@ -17,7 +17,7 @@ class CheckOwner
     {
         if ($request->user()->role !== 'owner') {
             return response()->json([
-                'message' => 'Only Owners Can Add Properties'
+                'message' => 'Only Owners Allowed to Access this route'
             ], 403);
         }
         return $next($request);

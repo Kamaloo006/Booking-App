@@ -24,6 +24,9 @@ return new class extends Migration
             $table->enum('status', ['pending', 'accepted'])->default('pending');
             $table->string('phone_number');
             $table->enum('role', ['owner', 'renter', 'admin'])->default('renter');
+
+            
+$table->string('fcm_token')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

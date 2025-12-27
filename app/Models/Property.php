@@ -27,10 +27,7 @@ class Property extends Model
             ->orderBy('id');
     }
 
-    public function features()
-    {
-        return $this->hasOne(Feature::class);
-    }
+
 
     public function getMainImageUrlAttribute()
     {
@@ -47,5 +44,9 @@ class Property extends Model
     public function favorites()
     {
         return $this->hasMany(Favorite::class);
+    }
+    public function rating()
+    {
+        return $this->hasOne(Rating::class);
     }
 }

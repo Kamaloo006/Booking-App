@@ -74,5 +74,27 @@ class PropertyPolicy
     {
         return $user->id === $property->user_id;
     }
+
     
+    public function rate(User $user, Property $property)
+    {
+       $hasRated= $user->bookings()->where('property_id',$property->id)->where('end_date','<' ,now())->exists();
+       if(!$hasRated){
+        return Response::deny('You must have a old booking for this property to rate it');
+       }
+       $alreadyrated=$property->rating()
+        ->where('user_id', $user->id)
+        ->exists();
+       if($alreadyrated){
+        return Response::deny('You already rated this property');
+       }
+        return Response::allow();
+    }
+    public function editRate(User $user,Property $property){
+     $rating=$property->rating()->where('user_id',$user->id)->exists();
+     if(!$rating){
+        return Response::deny('You have not rated this property yet');
+     }
+       return Response::allow();
+    }
 }

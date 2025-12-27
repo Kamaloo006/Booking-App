@@ -6,11 +6,13 @@ use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Models\Booking;
 use App\Models\Property;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Support\ValidatedData;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +20,22 @@ use Illuminate\Support\Facades\Auth;
 class BookingController extends Controller
 {
     use AuthorizesRequests;
+
+
+
+    private function updatePropertyAvailability(Property $property)
+    {
+        $hasCurrentBooking = $property->bookings()
+            ->where('status', 'accepted')
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->exists();
+
+        $property->update([
+            'is_available' => !$hasCurrentBooking
+        ]);
+    }
+
 
     public function store(StoreBookingRequest $request,  $property_id)
     {
@@ -29,7 +47,7 @@ class BookingController extends Controller
         $request_start = Carbon::parse($validatedData['start_date']);
         $request_end   = Carbon::parse($validatedData['end_date']);
 
-        $propertyStatus = $property->bookings()
+        $propertyStatus = $property->bookings()->where('status', 'accepted')
             ->where(function ($q1) use ($request_start, $request_end) {
                 $q1->whereBetween('start_date', [$request_start, $request_end])
                     ->orWhereBetween('end_date', [$request_start, $request_end])
@@ -51,48 +69,418 @@ class BookingController extends Controller
         $validatedData['user_id']     = $request->user()->id;
         $validatedData['property_id'] = $property->id;
         $validatedData['card_number'] = substr($validatedData['card_number'], -4);
+        $validatedData['status'] = 'pending';
+
         $booking = Booking::create($validatedData);
-$booking = Booking::with('property')->find($booking->id);
+        $booking = Booking::with('property')->find($booking->id);
         return response()->json([
-            'message' => 'Operation Completed Successfully',
+            'message' => 'Operation Completed Successfully. Waiting for the owner to accept the booking',
+
             'booking' => $booking
         ], 201);
     }
+
+
+    // get all pending bookings by owner
+
+    public function getAllPendingBookings()
+    {
+        $owner = Auth::user();
+
+        $bookings = Booking::where('status', 'pending')
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with(['property.images', 'user'])
+            ->get();
+
+        return response()->json([
+            'message' => 'Owner pending bookings fetched successfully',
+            'bookings' => $bookings
+        ], 200);
+    }
+
+
+    public function acceptBooking($booking_id)
+    {
+        $owner = Auth::user();
+
+        $booking = Booking::where('id', $booking_id)
+            ->where('status', 'pending')
+            ->whereHas(
+                'property',
+                fn($q) =>
+                $q->where('user_id', $owner->id)
+            )
+            ->firstOrFail();
+
+        $start = $booking->start_date;
+        $end   = $booking->end_date;
+
+        $conflict = Booking::where('property_id', $booking->property_id)
+            ->where('id', '!=', $booking->id)
+            ->where(function ($q) {
+                $q->where('status', 'accepted')
+                    ->orWhere('status', 'pending_edit');
+            })
+            ->where(function ($q) use ($start, $end) {
+                // accepted bookings
+                $q->where(function ($q1) use ($start, $end) {
+                    $q1->where('status', 'accepted')
+                        ->where(function ($d) use ($start, $end) {
+                            $d->whereBetween('start_date', [$start, $end])
+                                ->orWhereBetween('end_date', [$start, $end])
+                                ->orWhere(function ($x) use ($start, $end) {
+                                    $x->where('start_date', '<', $start)
+                                        ->where('end_date', '>', $end);
+                                });
+                        });
+                })
+                    // pending_edit bookings (use edit dates)
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->where('status', 'pending_edit')
+                            ->where(function ($d) use ($start, $end) {
+                                $d->whereBetween('edit_start_date', [$start, $end])
+                                    ->orWhereBetween('edit_end_date', [$start, $end])
+                                    ->orWhere(function ($x) use ($start, $end) {
+                                        $x->where('edit_start_date', '<', $start)
+                                            ->where('edit_end_date', '>', $end);
+                                    });
+                            });
+                    });
+            })
+            ->exists();
+
+        if ($conflict) {
+            $booking->update(['status' => 'rejected']);
+            return response()->json([
+                'message' => 'Booking rejected due to date conflict'
+            ], 422);
+        }
+
+        $booking->update([
+            'status' => 'accepted'
+        ]);
+
+        $this->updatePropertyAvailability($booking->property);
+
+
+        return response()->json([
+            'message' => 'Booking accepted successfully',
+            'booking' => $booking
+        ]);
+    }
+
+    public function getOwnerCurrentBookings()
+    {
+        $owner = Auth::user();
+        $today = now();
+
+        $bookings = Booking::where('status', 'accepted')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with([
+                'property.images',
+                'user'
+            ])
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'booking_id'  => $booking->id,
+                    'start_date'  => $booking->start_date,
+                    'end_date'    => $booking->end_date,
+                    'price'       => $booking->price,
+                    'status'      => $booking->status,
+                    'user'        => $booking->user,
+                    'property'    => $booking->property,
+                ];
+            });
+
+        if ($bookings->isEmpty()) {
+            return response()->json([
+                'message' => 'No current bookings found for your properties',
+                'bookings' => []
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Current bookings for your properties',
+            'bookings' => $bookings
+        ], 200);
+    }
+
+
+
+
+    public function rejectBooking($booking_id)
+    {
+        $owner = Auth::user();
+
+        $booking = Booking::where('id', $booking_id)
+            ->where('status', 'pending')
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with(['property.images', 'user'])
+            ->firstOrFail();
+
+        $booking->update([
+            'status' => 'rejected'
+        ]);
+
+        return response()->json([
+            'message' => 'Booking rejected successfully',
+            'booking' => $booking
+        ], 200);
+    }
+
+
+    public function getAcceptedBookings()
+    {
+        $owner = Auth::user();
+
+        $bookings = Booking::where('status', 'accepted')
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with(['property.images', 'user'])
+            ->get();
+
+        return response()->json([
+            'message' => 'Accepted bookings fetched successfully',
+            'bookings' => $bookings
+        ], 200);
+    }
+
+    public function getRejectedBookings()
+    {
+        $owner = Auth::user();
+
+        $bookings = Booking::where('status', 'rejected')
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with(['property.images', 'user'])
+            ->get();
+
+        return response()->json([
+            'message' => 'Rejected bookings fetched successfully',
+            'bookings' => $bookings
+        ], 200);
+    }
+
+
 
 
     public function update(UpdateBookingRequest $request, $booking_id)
     {
         $booking = Booking::findOrFail($booking_id);
         $this->authorize('update', $booking);
-        $validatedData = $request->validated();
-        $property = $booking->property;
 
-        $request_start = isset($validatedData['start_date']) ? Carbon::parse($validatedData['start_date']) : Carbon::parse($booking->start_date);
-        $request_end = isset($validatedData['end_date']) ? Carbon::parse($validatedData['end_date']) : Carbon::parse($booking->end_date);
+        if ($booking->status !== 'accepted') {
+            return response()->json([
+                'message' => 'Only accepted bookings can be edited'
+            ], 422);
+        }
 
-        $propertyStatus = $property->bookings()->where('id', '!=', $booking->id)
-            ->where(function ($q1) use ($request_start, $request_end) {
-                $q1->whereBetween('start_date', [$request_start, $request_end])
-                    ->orWhereBetween('end_date', [$request_start, $request_end])
-                    ->orWhere(function ($q2) use ($request_start, $request_end) {
-                        $q2->where('start_date', '<', $request_start)
-                            ->where('end_date', '>', $request_end);
+        $today = now()->startOfDay();
+
+        $isCurrent = $booking->start_date <= $today && $booking->end_date >= $today;
+        $isFuture  = $booking->start_date > $today;
+
+     
+
+        if ($isCurrent) {
+            
+            if ($request->has('start_date')) {
+                return response()->json([
+                    'message' => 'Cannot edit start date for a current booking'
+                ], 422);
+            }
+
+            $start = Carbon::parse($booking->start_date);
+            $end   = Carbon::parse($request->end_date);
+        } elseif ($isFuture) {
+            // ✅ مسموح تعديل الاثنين
+            $start = Carbon::parse($request->start_date);
+            $end   = Carbon::parse($request->end_date);
+        } else {
+            return response()->json([
+                'message' => 'Invalid booking state'
+            ], 422);
+        }
+
+        if ($end <= $start) {
+            return response()->json([
+                'message' => 'End date must be after start date'
+            ], 422);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | تحقق من التضارب مع الحجوزات المقبولة فقط
+    |--------------------------------------------------------------------------
+    */
+
+        $conflict = $booking->property->bookings()
+            ->where('id', '!=', $booking->id)
+            ->where('status', 'accepted')
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                    ->orWhereBetween('end_date', [$start, $end])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->where('start_date', '<', $start)
+                            ->where('end_date', '>', $end);
                     });
             })->exists();
 
-
-        if ($propertyStatus) {
+        if ($conflict) {
             return response()->json([
-                'message' => 'This property is already booked for the selected dates'
+                'message' => 'Date conflict with another accepted booking'
             ], 422);
-        }$days = $request_start->diffInDays($request_end) + 1;
-        $total_price = $property->price_per_day * $days;
-        $validatedData['price']       = $total_price;
-        $validatedData['user_id']     = $request->user()->id;
-        $validatedData['property_id'] = $property->id;
-        $booking->update($validatedData);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | حساب السعر الجديد وتخزين التعديل
+    |--------------------------------------------------------------------------
+    */
+
+        $days  = $start->diffInDays($end) + 1;
+        $price = $days * $booking->property->price_per_day;
+
+        $booking->update([
+            'edit_start_date' => $start->format('Y-m-d'),
+            'edit_end_date'   => $end->format('Y-m-d'),
+            'edit_price'      => $price,
+            'status'          => 'pending_edit',
+        ]);
+
         return response()->json([
-            'message' => 'Operation Completed Successfully',
+            'message' => 'Edit request sent to owner',
+            'booking' => $booking
+        ]);
+    }
+
+    public function getPendingEditBookings()
+    {
+        $owner = Auth::user();
+
+
+
+        $bookings = Booking::where('status', 'pending_edit')
+            ->whereHas('property', function ($q) use ($owner) {
+                $q->where('user_id', $owner->id);
+            })
+            ->with(['property.images', 'user'])
+            ->get();
+
+        return response()->json([
+            'message' => 'Owner pending bookings fetched successfully',
+            'bookings' => $bookings
+        ], 200);
+    }
+
+
+    public function acceptEdit($booking_id)
+    {
+        $owner = Auth::user();
+
+        $booking = Booking::where('id', $booking_id)
+            ->where('status', 'pending_edit')
+            ->whereHas('property', fn($q) => $q->where('user_id', $owner->id))
+            ->firstOrFail();
+
+        $start = $booking->edit_start_date;
+        $end   = $booking->edit_end_date;
+
+        $conflict = Booking::where('property_id', $booking->property_id)
+            ->where('id', '!=', $booking->id)
+            ->where(function ($q) {
+                $q->where('status', 'accepted')
+                    ->orWhere('status', 'pending_edit');
+            })
+            ->where(function ($q) use ($start, $end) {
+                $q->where(function ($x) use ($start, $end) {
+                    $x->where('status', 'accepted')
+                        ->whereBetween('start_date', [$start, $end]);
+                })->orWhere(function ($x) use ($start, $end) {
+                    $x->where('status', 'pending_edit')
+                        ->whereBetween('edit_start_date', [$start, $end]);
+                });
+            })
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Cannot accept edit due to date conflict'
+            ], 422);
+        }
+
+        $booking->update([
+            'start_date'      => $booking->edit_start_date,
+            'end_date'        => $booking->edit_end_date,
+            'price'           => $booking->edit_price,
+            'edit_start_date' => null,
+            'edit_end_date'   => null,
+            'edit_price'      => null,
+            'status'          => 'accepted',
+        ]);
+
+        $this->updatePropertyAvailability($booking->property);
+
+        return response()->json([
+            'message' => 'Edit accepted successfully',
+            'booking' => $booking
+        ]);
+    }
+
+
+
+
+
+
+
+    public function rejectEdit(int $booking_id)
+    {
+        $owner = Auth::user();
+
+        $booking = Booking::with('property')->find($booking_id);
+
+        if (!$booking) {
+            return response()->json([
+                'message' => 'Booking not found'
+            ], 404);
+        }
+
+        if ($booking->status !== 'pending_edit') {
+            return response()->json([
+                'message' => 'This booking is not in pending edit state',
+                'status'  => $booking->status
+            ], 422);
+        }
+
+        if ($booking->property->user_id !== $owner->id) {
+            return response()->json([
+                'message' => 'Unauthorized action'
+            ], 403);
+        }
+
+        $booking->update([
+            'edit_start_date' => null,
+            'edit_end_date'   => null,
+            'edit_price'      => null,
+            'status'          => 'accepted',
+        ]);
+
+        $this->updatePropertyAvailability($booking->property);
+
+
+        return response()->json([
+            'message' => 'Edit rejected, booking restored successfully',
             'booking' => $booking
         ], 200);
     }
@@ -103,9 +491,10 @@ $booking = Booking::with('property')->find($booking->id);
         $this->authorize('delete', $booking);
         $property = $booking->property;
         $booking->delete();
-        $hasOtherBookings = $property->bookings()->exists();
+        $this->updatePropertyAvailability($property);
 
-        if (!$hasOtherBookings) $property->update(['is_available' => true]);
+
+        // if (!$hasOtherBookings) $property->update(['is_available' => true]);
         return response()->json([
             'message' => 'Booking deleted successfully',
             'property_status' => $property->is_available,
@@ -116,17 +505,18 @@ $booking = Booking::with('property')->find($booking->id);
     public function getAllBookings(Request $request)
     {
         $user = $request->user();
-        $bookings = Booking::withTrashed()->with(['property','rating'])->where('user_id', $user->id)->get()->map(function ($booking) {
+        $bookings = Booking::withTrashed()->with(['property', 'rating'])->where('status', 'accepted')->where('user_id', $user->id)->get()->map(function ($booking) {
             return [
                 'booking_id' => $booking->id,
                 'property_id' => $booking->property_id,
                 'user_id' => $booking->user_id,
                 'start_date' => $booking->start_date,
                 'end_date' => $booking->end_date,
+                'status' => $booking->status,
                 'price'    => $booking->price,
                 'is_deleted' => $booking->trashed(),
                 'property' => $booking->property,
-                'rating'=>$booking->rating ??'This booking has no rating yet'
+                'rating' => $booking->rating ?? 'This booking has no rating yet'
             ];
         });
         if ($bookings->isEmpty()) {
@@ -135,48 +525,14 @@ $booking = Booking::with('property')->find($booking->id);
                 'bookings' => []
             ], 200);
         }
-        
+
         return response()->json([
             'message' => "These are all bookings related to this user",
             'bookings' => $bookings
         ], 200);
     }
 
-    public function addRating(Request $request, Booking $booking)
-    {
-        $this->authorize('rate', $booking);
-        $request->validate([
-            'stars' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string'
-        ]);
-        $rating = $booking->rating()->create([
-            'stars' => $request->stars,
-            'comment' => $request->comment
-        ]);
-        return response()->json([
-            'message' => 'Operation Completed Successfully',
-            'rating' => $rating
-        ], 201);
-    }
-
-    public function updateRating(Request $request, Booking $booking)
-    {
-        $this->authorize('editrate', $booking);
-        $validateData = $request->validate([
-            'stars' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string'
-        ]);
-        if (!$booking->rating) {
-            return response()->json([
-                'message' => 'booking has no rating to update it'
-            ], 404);
-        }
-        $booking->rating()->update($validateData);
-        return response()->json([
-            'message' => 'Operation Completed Successfully',
-            'rating' => $booking->rating
-        ], 200);
-    }public function getCancelledBookings()
+    public function getCancelledBookings()
     {
         $user = Auth::user();
         $bookings = Booking::onlyTrashed()->with('property')->where('user_id', $user->id)->get()->map(function ($booking) {
@@ -186,8 +542,9 @@ $booking = Booking::with('property')->find($booking->id);
                 'user_id' => $booking->user_id,
                 'start_date' => $booking->start_date,
                 'end_date' => $booking->end_date,
+                'status' => $booking->status,
                 'is_deleted' => $booking->trashed(),
-                 'property' => $booking->property 
+                'property' => $booking->property
             ];
         });
         if ($bookings->isEmpty()) {
@@ -207,7 +564,7 @@ $booking = Booking::with('property')->find($booking->id);
     {
         $user = Auth::user();
 
-        $bookings = Booking::with(['property','rating'])->where('user_id', $user->id)
+        $bookings = Booking::with(['property', 'rating'])->where('user_id', $user->id)
             ->where('end_date', '<', now())
             ->get()
             ->map(function ($booking) {
@@ -217,9 +574,10 @@ $booking = Booking::with('property')->find($booking->id);
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
+                    'status' => $booking->status,
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property,
-                     'rating'=>$booking->rating ??'This booking has no rating yet'
+                    'property' => $booking->property,
+                    'rating' => $booking->rating ?? 'This booking has no rating yet'
                 ];
             });
 
@@ -241,9 +599,10 @@ $booking = Booking::with('property')->find($booking->id);
     {
         $user = Auth::user();
 
-        $bookings = Booking::with('property')->where('user_id', $user->id)
+        $bookings = Booking::with(['property', 'rating'])->where('user_id', $user->id)
             ->where('end_date', '>=', now())
             ->where('start_date', '<=', now())
+            ->where('status', 'accepted')
             ->get()
             ->map(function ($booking) {
                 return [
@@ -252,9 +611,11 @@ $booking = Booking::with('property')->find($booking->id);
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
+                    'status' => $booking->status,
+
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property
-                     
+                    'property' => $booking->property
+
                 ];
             });
 
@@ -276,7 +637,7 @@ $booking = Booking::with('property')->find($booking->id);
     {
         $user = Auth::user();
 
-        $bookings = Booking::with('property')->where('user_id', $user->id)
+        $bookings = Booking::with(['property', 'rating'])->where('status', 'accepted')->where('user_id', $user->id)
             ->where('start_date', '>', now())
             ->get()
             ->map(function ($booking) {
@@ -286,8 +647,10 @@ $booking = Booking::with('property')->find($booking->id);
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
+                    'status' => $booking->status,
+
                     'is_deleted' => $booking->trashed(),
-                       'property' => $booking->property
+                    'property' => $booking->property
 
                 ];
             });
@@ -297,7 +660,8 @@ $booking = Booking::with('property')->find($booking->id);
                 'message' => 'This user has no future bookings',
                 'bookings' => []
             ], 200);
-        }return response()->json([
+        }
+        return response()->json([
             'message' => 'These are all future bookings for this user',
             'bookings' => $bookings
         ], 200);
@@ -308,7 +672,7 @@ $booking = Booking::with('property')->find($booking->id);
     {
         $user = Auth::user();
 
-        $bookings = Booking::with('property')->where('user_id', $user->id)
+        $bookings = Booking::with('property')->where('user_id', $user->id)->where('status', 'accepted')
             ->where('end_date', '>=', now())
             ->get()
             ->map(function ($booking) {
@@ -318,9 +682,11 @@ $booking = Booking::with('property')->find($booking->id);
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
+                    'status' => $booking->status,
+
                     'is_deleted' => $booking->trashed(),
-                     'property' => $booking->property,
-                
+                    'property' => $booking->property,
+
                 ];
             });
 
@@ -335,5 +701,28 @@ $booking = Booking::with('property')->find($booking->id);
             'message' => 'These are all future bookings for this user',
             'bookings' => $bookings
         ], 200);
+    }
+
+
+
+    public function getMyPendingBookings()
+    {
+        $user = Auth::user();
+
+        $bookings = Booking::where('user_id', $user->id)->where('status', 'pending')->with('property')->get();
+        return response()->json([
+            'message' => 'Your pending bookings',
+            'bookings' => $bookings
+        ]);
+    }
+    public function getMyPendingEditBookings()
+    {
+        $user = Auth::user();
+
+        $bookings = Booking::where('user_id', $user->id)->where('status', 'pending_edit')->with('property')->get();
+        return response()->json([
+            'message' => 'Your pending bookings',
+            'bookings' => $bookings
+        ]);
     }
 }
