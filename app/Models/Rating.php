@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class rating extends Model
 {
     protected $fillable = [
-        'booking_id',
+        'property_id',
         'stars',
-        'comment'
+        'comment',
+        'user_id'
     ];
-    public function booking()
+    public function property()
     {
-        return $this->belongsTo(Booking::class);
+        return $this->belongsTo(Property::class);
     }
 }

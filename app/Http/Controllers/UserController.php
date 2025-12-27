@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\FirebaseNotificationService;
 class UserController extends Controller
 {
     public function register(RegisterUserRequest $request)
@@ -36,6 +36,7 @@ class UserController extends Controller
             'phone_number'  => $validatedData['phone_number'],
             'role'          => $validatedData['role'],
             'status'        => 'pending',
+            'fcm_token'     => $request->fcm_token, // هنا يتم استقبال التوكن من الـ Request
         ]);
 
 
@@ -83,7 +84,31 @@ class UserController extends Controller
             'token' => $token
         ], 200);
     }
+// لا تنسى استدعاء الـ Service في أعلى الملف
 
+
+// ... الكود السابق ...
+
+public function testFirebaseConnection()
+{
+    $fakeToken = "fake-token-123-valid-format-for-testing-purposes";
+
+    try {
+        $response = FirebaseNotificationService::sendNotification(
+            $fakeToken, 
+            "اختبار اتصال", 
+            "هل المكتبة تعمل؟"
+        );
+
+        return response()->json([
+            'status' => 'Backend Setup is Correct!',
+            'firebase_response' => $response
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
 
 
     public function logout(Request $request)
@@ -138,6 +163,17 @@ class UserController extends Controller
 
         $user->status = 'accepted';
         $user->save();
+
+        if ($user->fcm_token) {
+        FirebaseNotificationService::sendNotification(
+            $user->fcm_token,
+            " Your account has been activited",
+            "welcome{$user->first_name}، "
+        );
+    }
+    else{
+        return response()->json(['message'=>'hello']);
+    }
 
         return response()->json([
             'message' => 'User approved successfully'

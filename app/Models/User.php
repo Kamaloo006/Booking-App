@@ -26,7 +26,8 @@ class User extends Authenticatable
         'id_img',
         'phone_number',
         'role',
-        'password'
+        'password',
+        'fcm_token'
     ];
 
     protected $appends = ['profile_img_url', 'id_img_url'];

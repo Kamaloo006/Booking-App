@@ -37,7 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
     //  show property by id
     Route::get("/property/{property_id}", [PropertyController::class, 'showProperty']);
 
-
+    Route::post('/rating/{property}', [PropertyController::class, 'addRating']);
+    Route::put('/updaterating/{property}', [PropertyController::class, 'updateRating']);
 
 
     //add property to favorite
@@ -68,9 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/current', [BookingController::class, 'getCurrentBookings']);
     Route::get('/bookings/future', [BookingController::class, 'getFutureBookings']);
 
-    //This Routes for rating the booking
-    Route::post('/rating/{booking}', [BookingController::class, 'addRating']);
-    Route::put('/updaterating/{booking}', [BookingController::class, 'updateRating']);
+   
+   
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
@@ -123,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('user/bookings/pending', [BookingController::class, 'getMyPendingBookings']);
     Route::get('user/bookings/pending_edit', [BookingController::class, 'getMyPendingEditBookings']);
 
+    Route::get('/test-firebase', [UserController::class, 'testFirebaseConnection']);
 
     // -------------------------------- || Admin Functions
     Route::middleware('checkAdmin')->group(function () {
