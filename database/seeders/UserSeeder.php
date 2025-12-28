@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
             (object)[
                 "first_name" => "Mazen",
                 "last_name" => "Alrefai",
-                "phone_number" => "091111111",
+                "phone_number" => "0911111111",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
                 'status' => 'accepted',
@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
             (object)[
                 "first_name" => "Kamal",
                 "last_name" => "Alkhateeb",
-                "phone_number" => "091111112",
+                "phone_number" => "0911111112",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 'status' => 'accepted',
@@ -37,7 +37,7 @@ class UserSeeder extends Seeder
             (object)[
                 "first_name" => "Loay",
                 "last_name" => "Hammodeh",
-                "phone_number" => "091111113",
+                "phone_number" => "0911111113",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 'status' => 'accepted',
@@ -46,7 +46,7 @@ class UserSeeder extends Seeder
             (object)[
                 "first_name" => "Zuhair",
                 "last_name" => "Mahjoub",
-                "phone_number" => "091111114",
+                "phone_number" => "0911111114",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
                 'status' => 'accepted',

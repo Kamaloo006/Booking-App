@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Services\FirebaseNotificationService;
+
 class UserController extends Controller
 {
     public function register(RegisterUserRequest $request)
@@ -84,31 +85,30 @@ class UserController extends Controller
             'token' => $token
         ], 200);
     }
-// لا تنسى استدعاء الـ Service في أعلى الملف
+    // لا تنسى استدعاء الـ Service في أعلى الملف
 
 
-// ... الكود السابق ...
+    // ... الكود السابق ...
 
-public function testFirebaseConnection()
-{
-    $fakeToken = "fake-token-123-valid-format-for-testing-purposes";
+    public function testFirebaseConnection()
+    {
+        $fakeToken = "fake-token-123-valid-format-for-testing-purposes";
 
-    try {
-        $response = FirebaseNotificationService::sendNotification(
-            $fakeToken, 
-            "اختبار اتصال", 
-            "هل المكتبة تعمل؟"
-        );
+        try {
+            $response = FirebaseNotificationService::sendNotification(
+                $fakeToken,
+                "اختبار اتصال",
+                "هل المكتبة تعمل؟"
+            );
 
-        return response()->json([
-            'status' => 'Backend Setup is Correct!',
-            'firebase_response' => $response
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'Backend Setup is Correct!',
+                'firebase_response' => $response
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
-}
 
 
     public function logout(Request $request)
@@ -120,12 +120,14 @@ public function testFirebaseConnection()
     }
     public function show()
     {
-        $users = User::all();
+        $users = User::where('role', 'renter')->orWhere('role', 'owner')->get();
         return response()->json([
             'message' => 'Opreration Completed Successfully',
             'User' => $users
         ], 200);
     }
+
+
     public function getUserFromToken(Request $request)
     {
         try {
@@ -165,15 +167,14 @@ public function testFirebaseConnection()
         $user->save();
 
         if ($user->fcm_token) {
-        FirebaseNotificationService::sendNotification(
-            $user->fcm_token,
-            " Your account has been activited",
-            "welcome{$user->first_name}، "
-        );
-    }
-    else{
-        return response()->json(['message'=>'hello']);
-    }
+            FirebaseNotificationService::sendNotification(
+                $user->fcm_token,
+                " Your account has been activited",
+                "welcome{$user->first_name}، "
+            );
+        } else {
+            return response()->json(['message' => 'hello']);
+        }
 
         return response()->json([
             'message' => 'User approved successfully'
@@ -203,5 +204,17 @@ public function testFirebaseConnection()
         } else {
             return response()->json(['message' => 'you can`t reject Accepted User'], 403);
         }
+    }
+
+    public function deleteUser($user_id)
+    {
+        $user = User::where('role', '!=', 'admin')
+            ->where('id', $user_id)
+            ->firstOrFail();
+
+        $user->delete();
+
+
+        return response()->json(['message' => 'User and All Related Data removed'], 200);
     }
 }
