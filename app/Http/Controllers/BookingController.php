@@ -152,7 +152,7 @@ class BookingController extends Controller
             ->exists();
 
         if ($conflict) {
-            $booking->update(['status' => 'rejected']);
+            // $booking->update(['status' => 'rejected']);
             return response()->json([
                 'message' => 'Booking rejected due to date conflict'
             ], 422);
@@ -170,6 +170,7 @@ class BookingController extends Controller
             'booking' => $booking
         ]);
     }
+
 
     public function getOwnerCurrentBookings()
     {
@@ -349,6 +350,10 @@ class BookingController extends Controller
     |--------------------------------------------------------------------------
     */
 
+
+
+
+
         $days  = $start->diffInDays($end) + 1;
         $price = $days * $booking->property->price_per_day;
 
@@ -369,8 +374,6 @@ class BookingController extends Controller
     {
         $owner = Auth::user();
 
-
-
         $bookings = Booking::where('status', 'pending_edit')
             ->whereHas('property', function ($q) use ($owner) {
                 $q->where('user_id', $owner->id);
@@ -383,6 +386,7 @@ class BookingController extends Controller
             'bookings' => $bookings
         ], 200);
     }
+
 
 
     public function acceptEdit($booking_id)
@@ -440,10 +444,6 @@ class BookingController extends Controller
 
 
 
-
-
-
-
     public function rejectEdit(int $booking_id)
     {
         $owner = Auth::user();
@@ -491,6 +491,7 @@ class BookingController extends Controller
         $this->authorize('delete', $booking);
         $property = $booking->property;
         $booking->delete();
+
         $this->updatePropertyAvailability($property);
 
 
@@ -612,7 +613,6 @@ class BookingController extends Controller
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'status' => $booking->status,
-
                     'is_deleted' => $booking->trashed(),
                     'property' => $booking->property
 
@@ -715,6 +715,7 @@ class BookingController extends Controller
             'bookings' => $bookings
         ]);
     }
+
     public function getMyPendingEditBookings()
     {
         $user = Auth::user();

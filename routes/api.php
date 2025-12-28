@@ -37,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //  show property by id
     Route::get("/property/{property_id}", [PropertyController::class, 'showProperty']);
 
+
+
+    // ---------------------------------------- // Ratings
+
     Route::post('/rating/{property}', [PropertyController::class, 'addRating']);
     Route::put('/updaterating/{property}', [PropertyController::class, 'updateRating']);
 
@@ -69,8 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/current', [BookingController::class, 'getCurrentBookings']);
     Route::get('/bookings/future', [BookingController::class, 'getFutureBookings']);
 
-   
-   
+
+
 
     // --------------------------------- || Filter Properties
     Route::get('properties', [PropertyController::class, 'filterProperties']);
@@ -130,5 +134,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/pendingUsers', [UserController::class, 'getAllPendingUsers']);
         Route::patch('/admin/users/{user_id}/approve', [UserController::class, 'approveUser']);
         Route::post('/admin/users/{user_id}/reject', [UserController::class, 'rejectUser']);
+        Route::delete('/admin/{user_id}/delete', [UserController::class, 'deleteUser']);
     });
 });

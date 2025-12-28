@@ -27,8 +27,6 @@ class Property extends Model
             ->orderBy('id');
     }
 
-
-
     public function getMainImageUrlAttribute()
     {
         $main = $this->images()->where('is_main', true)->first();
@@ -36,11 +34,15 @@ class Property extends Model
         return $main ? $main->url : null;
     }
 
+
+
     // function to get the Main image
     public function mainImage()
     {
         return $this->hasOne(PropertyImage::class)->where('is_main', true);
     }
+
+
     public function favorites()
     {
         return $this->hasMany(Favorite::class);
