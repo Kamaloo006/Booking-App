@@ -290,17 +290,25 @@ class PropertyController extends Controller
 
 
     public function getProperty(Property $property)
-    {
-      $rating= $property->rating()->first(); 
-    
+{
+      $user= Auth::user();
+      $current_rating=null;
+      if($user){
+        $current_rating=$property->rating()->where('user_id',$user->id)->first();
+      }
+      
+     $avg = round($property->rating()->avg('stars') ?? 0, 2);
 
         $property->load(['images']);
+        
         return response()->json([
             'message' => 'Operation Completed Successfully',
             'information about property' => $property,
-            'Rating' => $rating
+            'Current_Rating' =>$current_rating ,
+            'totalRating'=>$avg
         ], 200);
     }
+
     // public function addPropertyToFavorite(Property $property){
     // $user=Auth::user();
     //  $exists= $user->favorites()->where('property_id',$property->id)->exists();
@@ -367,7 +375,10 @@ class PropertyController extends Controller
             'favorite' => $favorites
         ], 200);
     }
-    public function addRating(Request $request, Property $property)
+ 
+    
+    
+     public function addRating(Request $request, Property $property)
     {
         $this->authorize('rate', $property);
       
@@ -386,26 +397,36 @@ class PropertyController extends Controller
         ], 201);
     }
     
-    public function updateRating(Request $request, Property $property)
-    {
-        $this->authorize('editrate', $property);
+   public function updateRating(Request $request, Property $property)
+{
+    $this->authorize('editrate', $property);
 
-        $validateData = $request->validate([
-            'stars' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string'
-        ]);
+    // التحقق من صحة البيانات
+    $validateData = $request->validate([
+        'stars' => 'required|integer|min:1|max:5',
+        'comment' => 'nullable|string'
+    ]);
 
-        
-        $property->rating()->update([
-            'stars' => $validateData['stars'],
-            'comment' => $validateData['comment'] ?? $property->rating->comment
-        ]);
+    // جلب تقييم المستخدم الحالي فقط
+    $rating = $property->rating()->where('user_id', Auth::id())->first();
 
-        $property->load('rating');
-
+    if (!$rating) {
         return response()->json([
-            'message' => 'Operation Completed Successfully',
-            'rating' => $property->rating
-        ], 200);
+            'message' => 'Rating not found for this user.'
+        ], 404);
     }
+
+    // تحديث التقييم
+    $rating->update([
+        'stars' => $validateData['stars'],
+        'comment' => $validateData['comment'] ?? $rating->comment,
+    ]);
+
+    return response()->json([
+        'message' => 'Operation Completed Successfully',
+        'rating' => $rating
+    ], 200);
+}
+
+}
 }

@@ -19,9 +19,13 @@ class PropertyPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Property $property): bool
+    public function view(User $user, Property $property)
     {
-        return $user->id === $property->user_id;
+        if($user->id!=$property->user_id){
+            return Response::deny('This property does not belong to you');
+        }
+        return Response::allow();
+        
     }
 
     /**
