@@ -75,7 +75,6 @@ class BookingController extends Controller
         $booking = Booking::with('property')->find($booking->id);
         return response()->json([
             'message' => 'Operation Completed Successfully. Waiting for the owner to accept the booking',
-
             'booking' => $booking
         ], 201);
     }
@@ -107,69 +106,43 @@ class BookingController extends Controller
 
         $booking = Booking::where('id', $booking_id)
             ->where('status', 'pending')
-            ->whereHas(
-                'property',
-                fn($q) =>
-                $q->where('user_id', $owner->id)
-            )
+            ->whereHas('property', fn($q) => $q->where('user_id', $owner->id))
             ->firstOrFail();
 
         $start = $booking->start_date;
         $end   = $booking->end_date;
 
+        // 🔥 التحقق من التعارض قبل القبول فقط
         $conflict = Booking::where('property_id', $booking->property_id)
             ->where('id', '!=', $booking->id)
-            ->where(function ($q) {
-                $q->where('status', 'accepted')
-                    ->orWhere('status', 'pending_edit');
-            })
+            ->whereIn('status', ['accepted', 'pending_edit']) // pending لا يمنع.. فقط accepted & pending_edit
             ->where(function ($q) use ($start, $end) {
-                // accepted bookings
-                $q->where(function ($q1) use ($start, $end) {
-                    $q1->where('status', 'accepted')
-                        ->where(function ($d) use ($start, $end) {
-                            $d->whereBetween('start_date', [$start, $end])
-                                ->orWhereBetween('end_date', [$start, $end])
-                                ->orWhere(function ($x) use ($start, $end) {
-                                    $x->where('start_date', '<', $start)
-                                        ->where('end_date', '>', $end);
-                                });
-                        });
-                })
-                    // pending_edit bookings (use edit dates)
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->where('status', 'pending_edit')
-                            ->where(function ($d) use ($start, $end) {
-                                $d->whereBetween('edit_start_date', [$start, $end])
-                                    ->orWhereBetween('edit_end_date', [$start, $end])
-                                    ->orWhere(function ($x) use ($start, $end) {
-                                        $x->where('edit_start_date', '<', $start)
-                                            ->where('edit_end_date', '>', $end);
-                                    });
-                            });
+                $q->whereBetween('start_date', [$start, $end])
+                    ->orWhereBetween('end_date', [$start, $end])
+                    ->orWhere(function ($sub) use ($start, $end) {
+                        $sub->where('start_date', '<', $start)
+                            ->where('end_date', '>', $end);
                     });
             })
             ->exists();
 
         if ($conflict) {
-            // $booking->update(['status' => 'rejected']);
-            return response()->json([
-                'message' => 'Booking rejected due to date conflict'
-            ], 422);
+            // ❗️ لا نقبل → فقط نرفض أو نرجع Response بدون update
+
+            return response()->json(['message' => 'Booking rejected due to date conflict'], 422);
         }
 
-        $booking->update([
-            'status' => 'accepted'
-        ]);
-
+        // ✔️ قبول إذا لا يوجد تعارض
+        $booking->update(['status' => 'accepted']);
         $this->updatePropertyAvailability($booking->property);
-
 
         return response()->json([
             'message' => 'Booking accepted successfully',
             'booking' => $booking
         ]);
     }
+
+
 
 
     public function getOwnerCurrentBookings()
@@ -292,10 +265,10 @@ class BookingController extends Controller
         $isCurrent = $booking->start_date <= $today && $booking->end_date >= $today;
         $isFuture  = $booking->start_date > $today;
 
-     
+
 
         if ($isCurrent) {
-            
+
             if ($request->has('start_date')) {
                 return response()->json([
                     'message' => 'Cannot edit start date for a current booking'
@@ -565,7 +538,7 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        $bookings = Booking::with(['property', 'rating'])->where('user_id', $user->id)
+        $bookings = Booking::with(['property'])->where('user_id', $user->id)
             ->where('end_date', '<', now())
             ->get()
             ->map(function ($booking) {
@@ -578,7 +551,6 @@ class BookingController extends Controller
                     'status' => $booking->status,
                     'is_deleted' => $booking->trashed(),
                     'property' => $booking->property,
-                    'rating' => $booking->rating ?? 'This booking has no rating yet'
                 ];
             });
 
@@ -600,7 +572,7 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        $bookings = Booking::with(['property', 'rating'])->where('user_id', $user->id)
+        $bookings = Booking::with(['property'])->where('user_id', $user->id)
             ->where('end_date', '>=', now())
             ->where('start_date', '<=', now())
             ->where('status', 'accepted')
@@ -637,7 +609,7 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        $bookings = Booking::with(['property', 'rating'])->where('status', 'accepted')->where('user_id', $user->id)
+        $bookings = Booking::with(['property'])->where('status', 'accepted')->where('user_id', $user->id)
             ->where('start_date', '>', now())
             ->get()
             ->map(function ($booking) {
@@ -648,10 +620,8 @@ class BookingController extends Controller
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'status' => $booking->status,
-
                     'is_deleted' => $booking->trashed(),
                     'property' => $booking->property
-
                 ];
             });
 
@@ -683,7 +653,6 @@ class BookingController extends Controller
                     'start_date' => $booking->start_date,
                     'end_date' => $booking->end_date,
                     'status' => $booking->status,
-
                     'is_deleted' => $booking->trashed(),
                     'property' => $booking->property,
 

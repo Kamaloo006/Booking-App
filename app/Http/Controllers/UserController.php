@@ -118,9 +118,12 @@ class UserController extends Controller
             'message' => 'User logged out successfully'
         ], 200);
     }
+
+
+
     public function show()
     {
-        $users = User::where('role', 'renter')->orWhere('role', 'owner')->get();
+        $users = User::where('status', 'accepted')->where('role', 'renter')->orWhere('role', 'owner')->get();
         return response()->json([
             'message' => 'Opreration Completed Successfully',
             'User' => $users
