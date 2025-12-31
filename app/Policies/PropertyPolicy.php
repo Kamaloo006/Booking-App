@@ -19,9 +19,12 @@ class PropertyPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Property $property): bool
+    public function view(User $user, Property $property)
     {
-        return $user->id === $property->user_id;
+        if ($user->id != $property->user_id) {
+            return Response::deny('This property does not belong to you');
+        }
+        return Response::allow();
     }
 
     /**
@@ -31,10 +34,11 @@ class PropertyPolicy
     {
         return $user->id === $property->user_id;
     }
+
     public function add(User $user, Property $property)
     {
         if ($property->user_id == $user->id) {
-            return Response::deny('you cannot book your own property');
+            return Response::deny('You cannot book your own property');
         }
         return Response::allow();
     }
@@ -76,27 +80,37 @@ class PropertyPolicy
         return $user->id === $property->user_id;
     }
 
-
+    /**
+     * Determine whether the user can rate the property.
+     */
     public function rate(User $user, Property $property)
     {
-        $hasRated = $user->bookings()->where('property_id', $property->id)->where('end_date', '<', now())->exists();
-        if (!$hasRated) {
-            return Response::deny('You must have a old booking for this property to rate it');
-        }
-        $alreadyrated = $property->rating()
-            ->where('user_id', $user->id)
+        $hasBooked = $user->bookings()
+            ->where('property_id', $property->id)
+            ->where('end_date', '<', now())
             ->exists();
-        if ($alreadyrated) {
-            return Response::deny('You already rated this property');
+
+        if (!$hasBooked) {
+            return Response::deny('You must have a previous booking for this property to rate it');
         }
+
+        // No need to check "already rated" because controller uses updateOrCreate
         return Response::allow();
     }
+
+    /**
+     * Determine whether the user can edit their rating.
+     */
     public function editRate(User $user, Property $property)
     {
-        $rating = $property->rating()->where('user_id', $user->id)->exists();
-        if (!$rating) {
+        $hasRating = $property->ratings()
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$hasRating) {
             return Response::deny('You have not rated this property yet');
         }
+
         return Response::allow();
     }
 }
