@@ -163,7 +163,7 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 return [
-                    'booking_id'  => $booking->id,
+                    'id'  => $booking->id,
                     'start_date'  => $booking->start_date,
                     'end_date'    => $booking->end_date,
                     'price'       => $booking->price,
@@ -189,11 +189,11 @@ class BookingController extends Controller
 
 
 
-    public function rejectBooking($booking_id)
+    public function rejectBooking($id)
     {
         $owner = Auth::user();
 
-        $booking = Booking::where('id', $booking_id)
+        $booking = Booking::where('id', $id)
             ->where('status', 'pending')
             ->whereHas('property', function ($q) use ($owner) {
                 $q->where('user_id', $owner->id);
@@ -249,9 +249,9 @@ class BookingController extends Controller
 
 
 
-    public function update(UpdateBookingRequest $request, $booking_id)
+    public function update(UpdateBookingRequest $request, $id)
     {
-        $booking = Booking::findOrFail($booking_id);
+        $booking = Booking::findOrFail($id);
         $this->authorize('update', $booking);
 
         if ($booking->status !== 'accepted') {
@@ -362,11 +362,11 @@ class BookingController extends Controller
 
 
 
-    public function acceptEdit($booking_id)
+    public function acceptEdit($id)
     {
         $owner = Auth::user();
 
-        $booking = Booking::where('id', $booking_id)
+        $booking = Booking::where('id', $id)
             ->where('status', 'pending_edit')
             ->whereHas('property', fn($q) => $q->where('user_id', $owner->id))
             ->firstOrFail();
@@ -417,11 +417,11 @@ class BookingController extends Controller
 
 
 
-    public function rejectEdit(int $booking_id)
+    public function rejectEdit(int $id)
     {
         $owner = Auth::user();
 
-        $booking = Booking::with('property')->find($booking_id);
+        $booking = Booking::with('property')->find($id);
 
         if (!$booking) {
             return response()->json([
@@ -458,9 +458,9 @@ class BookingController extends Controller
         ], 200);
     }
 
-    public function delete($booking_id)
+    public function delete($id)
     {
-        $booking = Booking::findOrFail($booking_id);
+        $booking = Booking::findOrFail($id);
         $this->authorize('delete', $booking);
         $property = $booking->property;
         $booking->delete();
@@ -479,9 +479,9 @@ class BookingController extends Controller
     public function getAllBookings(Request $request)
     {
         $user = $request->user();
-        $bookings = Booking::withTrashed()->with(['property', 'rating'])->where('status', 'accepted')->where('user_id', $user->id)->get()->map(function ($booking) {
+        $bookings = Booking::withTrashed()->with(['property'])->where('status', 'accepted')->where('user_id', $user->id)->get()->map(function ($booking) {
             return [
-                'booking_id' => $booking->id,
+                'id' => $booking->id,
                 'property_id' => $booking->property_id,
                 'user_id' => $booking->user_id,
                 'start_date' => $booking->start_date,
@@ -490,7 +490,7 @@ class BookingController extends Controller
                 'price'    => $booking->price,
                 'is_deleted' => $booking->trashed(),
                 'property' => $booking->property,
-                'rating' => $booking->rating ?? 'This booking has no rating yet'
+               
             ];
         });
         if ($bookings->isEmpty()) {
@@ -511,7 +511,7 @@ class BookingController extends Controller
         $user = Auth::user();
         $bookings = Booking::onlyTrashed()->with('property')->where('user_id', $user->id)->get()->map(function ($booking) {
             return [
-                'booking_id' => $booking->id,
+                'id' => $booking->id,
                 'property_id' => $booking->property_id,
                 'user_id' => $booking->user_id,
                 'start_date' => $booking->start_date,
@@ -543,7 +543,7 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 return [
-                    'booking_id' => $booking->id,
+                    'id' => $booking->id,
                     'property_id' => $booking->property_id,
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
@@ -579,7 +579,7 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 return [
-                    'booking_id' => $booking->id,
+                    'id' => $booking->id,
                     'property_id' => $booking->property_id,
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
@@ -614,7 +614,7 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 return [
-                    'booking_id' => $booking->id,
+                    'id' => $booking->id,
                     'property_id' => $booking->property_id,
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,
@@ -647,7 +647,7 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 return [
-                    'booking_id' => $booking->id,
+                    'id' => $booking->id,
                     'property_id' => $booking->property_id,
                     'user_id' => $booking->user_id,
                     'start_date' => $booking->start_date,

@@ -15,7 +15,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/signUp', [UserController::class, 'register']);
 Route::post('/signIn', [UserController::class, 'login']);
 Route::post('/signOut', [UserController::class, 'logout'])->middleware('auth:sanctum');
-Route::get('/properties', [PropertyController::class, 'showProperties']);
+//Route::get('/properties', [PropertyController::class, 'showProperties']);
 
 Route::get('/Users', [UserController::class, 'show']);
 
@@ -42,7 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------------------------------- // Ratings
 
     Route::post('/rating/{property}', [PropertyController::class, 'addRating']);
-    Route::put('/updaterating/{property}', [PropertyController::class, 'updateRating']);
+   // Route::put('/updaterating/{property}', [PropertyController::class, 'updateRating']);
 
 
     //add property to favorite

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class rating extends Model
+class Rating extends Model
 {
     protected $fillable = [
         'property_id',
@@ -12,8 +12,10 @@ class rating extends Model
         'comment',
         'user_id'
     ];
+
     public function property()
     {
         return $this->belongsTo(Property::class);
     }
 }
+
