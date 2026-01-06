@@ -4,9 +4,11 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
+use Illuminate\Support\Facades\Route;
+  use Illuminate\Http\Request;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -45,10 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
    // Route::put('/updaterating/{property}', [PropertyController::class, 'updateRating']);
 
 
-    //add property to favorite
-    Route::post('/property/favorite/{property}', [PropertyController::class, 'addPropertyToFavorite']);
-    //remove property from favorite
-    Route::delete('/property/favorite/{property}', [PropertyController::class, 'removeFromFavorite']);
+   
 
     // show my favorites
     Route::get('/favorites', [PropertyController::class, 'getFavorites']);
@@ -136,4 +135,46 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/users/{user_id}/reject', [UserController::class, 'rejectUser']);
         Route::delete('/admin/{user_id}/delete', [UserController::class, 'deleteUser']);
     });
+
+  
+
+    
+});
+
+Route::post('/send-notification', function (Request $request) {
+    $request->validate([
+        'fcm_token' => 'required|string',
+        'title' => 'required|string',
+        'body' => 'required|string',
+    ]);
+
+    $messaging = app('firebase.messaging');
+
+    // Create notification
+    $notification = Notification::create($request->title, $request->body);
+
+    // Attach the FCM token (this fixes "missing target")
+    $message = CloudMessage::withTarget('token', $request->fcm_token)
+                           ->withNotification($notification);
+
+    try {
+        $messaging->send($message);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification sent successfully!'
+        ]);
+
+    } catch (\Kreait\Firebase\Exception\MessagingException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Firebase Messaging Error: ' . $e->getMessage()
+        ], 500);
+
+    } catch (\Kreait\Firebase\Exception\FirebaseException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Firebase General Error: ' . $e->getMessage()
+        ], 500);
+    }
 });

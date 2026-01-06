@@ -12,7 +12,9 @@ class Rating extends Model
         'comment',
         'user_id'
     ];
-
+ protected $casts = [
+        'stars' => 'float',
+    ];
     public function property()
     {
         return $this->belongsTo(Property::class);

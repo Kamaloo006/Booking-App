@@ -177,36 +177,111 @@ class PropertyController extends Controller
         return response()->json(['message' => 'Property deleted successfully.']);
     }
 
-    public function filterProperties(Request $request)
-    {
-        $query = Property::with(['user', 'images', 'userRating']);
+//     public function filterProperties(Request $request)
+//     {
+//         $query = Property::with(['user', 'images', 'userRating']);
 
-        if ($request->filled('city'))         $query->where('city', $request->city);
-        if ($request->filled('governorate'))  $query->where('governorate', $request->governorate);
-        if ($request->filled('category'))     $query->where('category', $request->category);
-        if ($request->filled('min_price'))    $query->where('price_per_day', '>=', $request->min_price);
-        if ($request->filled('max_price'))    $query->where('price_per_day', '<=', $request->max_price);
-        if ($request->filled('is_available')) $query->where('is_available', $request->is_available);
-        if ($request->filled('rooms'))        $query->where('rooms', $request->rooms);
-        if ($request->filled('bathrooms'))    $query->where('bathrooms', $request->bathrooms);
-        if ($request->filled('kitchens'))     $query->where('kitchens', $request->kitchens);
-        if ($request->filled('min_area'))     $query->where('area', '>=', $request->min_area);
-        if ($request->filled('max_area'))     $query->where('area', '<=', $request->max_area);
+//         if ($request->filled('city'))         $query->where('city', $request->city);
+//         if ($request->filled('governorate'))  $query->where('governorate', $request->governorate);
+//         if ($request->filled('category'))     $query->where('category', $request->category);
+//         if ($request->filled('min_price'))    $query->where('price_per_day', '>=', $request->min_price);
+//         if ($request->filled('max_price'))    $query->where('price_per_day', '<=', $request->max_price);
+//         if ($request->filled('is_available')) $query->where('is_available', $request->is_available);
+//         if ($request->filled('rooms'))        $query->where('rooms', $request->rooms);
+//         if ($request->filled('bathrooms'))    $query->where('bathrooms', $request->bathrooms);
+//         if ($request->filled('kitchens'))     $query->where('kitchens', $request->kitchens);
+//         if ($request->filled('min_area'))     $query->where('area', '>=', $request->min_area);
+//         if ($request->filled('max_area'))     $query->where('area', '<=', $request->max_area);
 
-        $properties = $query->get();
+//       $properties = $query->get()->map(function ($property) {
+//     $property->ratings_count = $property->ratings()->count();
+//     return $property;
+// });
 
-        return response()->json([
-            'message'    => 'Filtered properties retrieved successfully.',
-            'properties' => $properties
+// return response()->json([
+//     'message'    => 'Filtered properties retrieved successfully.',
+//     'properties' => $properties
+// ]);
+
+
+//         return response()->json([
+//             'message'    => 'Filtered properties retrieved successfully.',
+//             'properties' => $properties
+//         ]);
+//     }
+// public function filterProperties(Request $request)
+// {
+//     $query = Property::query()
+//         ->with(['user', 'images'])
+//         ->withCount('ratings')
+//         ->withExists([
+//             'favorites as is_favorite' => fn ($q) =>
+//                 $q->where('user_id', auth()->id())
+//         ]);
+
+//     if ($request->filled('city'))         $query->where('city', $request->city);
+//     if ($request->filled('governorate'))  $query->where('governorate', $request->governorate);
+//     if ($request->filled('category'))     $query->where('category', $request->category);
+//     if ($request->filled('min_price'))    $query->where('price_per_day', '>=', $request->min_price);
+//     if ($request->filled('max_price'))    $query->where('price_per_day', '<=', $request->max_price);
+//     if ($request->filled('is_available')) $query->where('is_available', $request->is_available);
+//     if ($request->filled('rooms'))        $query->where('rooms', $request->rooms);
+//     if ($request->filled('bathrooms'))    $query->where('bathrooms', $request->bathrooms);
+//     if ($request->filled('kitchens'))     $query->where('kitchens', $request->kitchens);
+//     if ($request->filled('min_area'))     $query->where('area', '>=', $request->min_area);
+//     if ($request->filled('max_area'))     $query->where('area', '<=', $request->max_area);
+
+//     $properties = $query->get();
+
+//     return response()->json([
+//         'properties' => $properties
+//     ]);
+// }
+public function filterProperties(Request $request)
+{
+    $query = Property::with(['user', 'images', 'userRating'])
+        ->withCount('ratings')
+        ->withExists([
+            'favorites as is_favorite' => fn($q) => 
+                $q->where('user_id', auth()->id())
         ]);
-    }
+
+    // Filtering
+    if ($request->filled('city'))         $query->where('city', $request->city);
+    if ($request->filled('governorate'))  $query->where('governorate', $request->governorate);
+    if ($request->filled('category'))     $query->where('category', $request->category);
+    if ($request->filled('min_price'))    $query->where('price_per_day', '>=', $request->min_price);
+    if ($request->filled('max_price'))    $query->where('price_per_day', '<=', $request->max_price);
+    if ($request->filled('is_available')) $query->where('is_available', $request->is_available);
+    if ($request->filled('rooms'))        $query->where('rooms', $request->rooms);
+    if ($request->filled('bathrooms'))    $query->where('bathrooms', $request->bathrooms);
+    if ($request->filled('kitchens'))     $query->where('kitchens', $request->kitchens);
+    if ($request->filled('min_area'))     $query->where('area', '>=', $request->min_area);
+    if ($request->filled('max_area'))     $query->where('area', '<=', $request->max_area);
+
+    // Fetch properties
+    $properties = $query->get()->map(function ($property) {
+        // ratings_count is already included by withCount, so no extra queries needed
+        return $property;
+    });
+
+    return response()->json([
+        'properties' => $properties
+    ]);
+}
+
+
 
     public function getPropertiesByOwner()
     {
         $user = Auth::user();
         $this->authorize('showByOwner', $user);
 
-        $properties = $user->properties()->with('images')->get();
+       $properties = $user->properties()->with('images')->get()->map(function ($property) {
+    $property->ratings_count = $property->ratings()->count();
+    return $property;
+});
+
 
         return response()->json([
             'message'    => 'These all properties for this owner',
@@ -226,31 +301,72 @@ class PropertyController extends Controller
         ]);
     }
 
+    // public function toggleFavorite(Property $property)
+    // {
+    //     $user = Auth::user();
+
+    //     $favorite = $user->favorites()->where('property_id', $property->id)->first();
+
+    //     if ($favorite) {
+    //         $favorite->delete();
+    //         return response()->json(['message' => 'Property removed from favorites']);
+    //     }
+
+    //     $user->favorites()->create(['property_id' => $property->id]);
+    //     return response()->json(['message' => 'Property added to favorites'], 201);
+    // }
     public function toggleFavorite(Property $property)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        $favorite = $user->favorites()->where('property_id', $property->id)->first();
+    $favorite = $user->favorites()->firstOrCreate([
+        'property_id' => $property->id
+    ]);
 
-        if ($favorite) {
-            $favorite->delete();
-            return response()->json(['message' => 'Property removed from favorites']);
-        }
-
-        $user->favorites()->create(['property_id' => $property->id]);
-        return response()->json(['message' => 'Property added to favorites'], 201);
-    }
-
-    public function getFavorites()
-    {
-        $user = Auth::user();
-        $favorites = $user->favorites()->with('property.images')->get();
+    if (! $favorite->wasRecentlyCreated) {
+        $favorite->delete();
 
         return response()->json([
-            'message'  => 'Operation Completed Successfully',
-            'favorite' => $favorites
+            'property_id' => $property->id,
+            'is_favorite' => false,
         ]);
     }
+
+    return response()->json([
+        'property_id' => $property->id,
+        'is_favorite' => true,
+    ], 201);
+}
+
+
+    // public function getFavorites()
+    // {
+    //     $user = Auth::user();
+    //     $favorites = $user->favorites()->with('property.images')->get();
+
+    //     return response()->json([
+    //         'message'  => 'Operation Completed Successfully',
+    //         'favorite' => $favorites
+    //     ]);
+    // }
+public function getFavorites()
+{
+    $favorites = Auth::user()
+        ->favoriteProperties()
+        ->with(['images', 'user']) // eager load both images and owner
+        ->get()
+        ->map(function ($property) {
+            // Add `is_favorite` field for the Flutter app
+            $property->is_favorite = true;
+
+            return $property;
+        });
+
+    return response()->json([
+        'data' => $favorites
+    ]);
+}
+
 
     public function addRating(Request $request, Property $property)
     {

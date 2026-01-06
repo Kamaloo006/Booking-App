@@ -16,11 +16,21 @@ use Illuminate\Contracts\Support\ValidatedData;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
+
 
 class BookingController extends Controller
 {
     use AuthorizesRequests;
 
+
+    protected $notificationService;
+
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
 
 
     private function updatePropertyAvailability(Property $property)
@@ -63,6 +73,8 @@ class BookingController extends Controller
             ], 422);
         }
 
+        $user = $request->user();
+
         $days = $request_start->diffInDays($request_end) + 1;
         $total_price = $property->price_per_day * $days;
         $validatedData['price']       = $total_price;
@@ -72,10 +84,20 @@ class BookingController extends Controller
         $validatedData['status'] = 'pending';
 
         $booking = Booking::create($validatedData);
-        $booking = Booking::with('property')->find($booking->id);
+        $bookingA = Booking::with('property')->find($booking->id);
+
+        if ($user->fcm_token) {
+            $this->notificationService->send(
+                $user->fcm_token,
+                'Booking sent',
+                'Waiting for the owner to accept the booking'
+            );
+        }
+
+
         return response()->json([
             'message' => 'Operation Completed Successfully. Waiting for the owner to accept the booking',
-            'booking' => $booking
+            'booking' => $bookingA
         ], 201);
     }
 
@@ -87,6 +109,7 @@ class BookingController extends Controller
         $owner = Auth::user();
 
         $bookings = Booking::where('status', 'pending')
+         //->where('end_date', '>=', now())
             ->whereHas('property', function ($q) use ($owner) {
                 $q->where('user_id', $owner->id);
             })
@@ -136,6 +159,21 @@ class BookingController extends Controller
         $booking->update(['status' => 'accepted']);
         $this->updatePropertyAvailability($booking->property);
 
+        // 🔔 Send notification to the user who booked
+        if ($booking->user && $booking->user->fcm_token) {
+            $this->notificationService->send(
+                $booking->user->fcm_token,
+                'Booking Accepted',
+                "Your booking for {$booking->property->name} has been accepted.",
+                [
+                    'type' => 'booking_status',
+                    'status' => 'accepted',
+                    'booking_id' => $booking->id
+                ]
+            );
+        }
+        
+        
         return response()->json([
             'message' => 'Booking accepted successfully',
             'booking' => $booking
@@ -204,6 +242,20 @@ class BookingController extends Controller
         $booking->update([
             'status' => 'rejected'
         ]);
+
+        // 🔔 Send notification to the user who booked
+        if ($booking->user && $booking->user->fcm_token) {
+            $this->notificationService->send(
+                $booking->user->fcm_token,
+                'Booking Rejected',
+                "Your booking for {$booking->property->name} has been rejected.",
+                [
+                    'type' => 'booking_status',
+                    'status' => 'rejected',
+                    'booking_id' => $booking->id
+                ]
+            );
+        }
 
         return response()->json([
             'message' => 'Booking rejected successfully',
@@ -409,6 +461,19 @@ class BookingController extends Controller
 
         $this->updatePropertyAvailability($booking->property);
 
+        if ($booking->user && $booking->user->fcm_token) {
+            $this->notificationService->send(
+                $booking->user->fcm_token,
+                'Booking Edit accepted',
+                "Your booking modification for {$booking->property->name} has been accepted.",
+                [
+                    'type' => 'booking_status',
+                    'status' => 'accepted',
+                    'booking_id' => $booking->id
+                ]
+            );
+        }
+        
         return response()->json([
             'message' => 'Edit accepted successfully',
             'booking' => $booking
@@ -451,6 +516,19 @@ class BookingController extends Controller
 
         $this->updatePropertyAvailability($booking->property);
 
+        
+        if ($booking->user && $booking->user->fcm_token) {
+            $this->notificationService->send(
+                $booking->user->fcm_token,
+                'Booking Edit rejected',
+                "Your booking modification for {$booking->property->name} has been rejected.",
+                [
+                    'type' => 'booking_status',
+                    'status' => 'rejected',
+                    'booking_id' => $booking->id
+                ]
+            );
+        }
 
         return response()->json([
             'message' => 'Edit rejected, booking restored successfully',
@@ -539,8 +617,11 @@ class BookingController extends Controller
         $user = Auth::user();
 
         $bookings = Booking::with(['property'])->where('user_id', $user->id)
-            ->where('end_date', '<', now())
-            ->get()
+            // ->where('end_date', '<', now())
+            // ->get()
+             ->where('status', 'accepted') // only accepted bookings
+        ->where('end_date', '<', now()) // date in the past
+        ->get()
             ->map(function ($booking) {
                 return [
                     'id' => $booking->id,

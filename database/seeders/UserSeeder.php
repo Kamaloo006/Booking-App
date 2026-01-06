@@ -23,6 +23,7 @@ class UserSeeder extends Seeder
                 "role" => 'owner',
                 'status' => 'accepted',
                 "password" => Hash::make("00000000"),
+                "fcm_token"=>'cOAd7nyQSICFnhzbTgeDmS:APA91bEt5HRQWpFImEFS-NDDCVmX7mj1XVmQD740qwLam7FQYWzjXjhs1oVTQZkXRO_zAYDUoL-O-A1jvSwKpgv90NmU6XrElx7K2fPmbET77lN4JJ5Jvfk',
 
             ],
             (object)[
@@ -32,7 +33,8 @@ class UserSeeder extends Seeder
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 'status' => 'accepted',
-                "password" => Hash::make("00000000")
+                "password" => Hash::make("00000000"),
+                "fcm_token"=>'eCWCFdzCSf2IZkUr0_XtPW:APA91bGR6Zrh8ngpDHy5-9CpXmtZHXq3GjCx8ofmFvXoOyha9nIE4HJWp2pfvqnE5Hdrc_eK-64n2hPPqKYZE9GVhlbURWYD9DyAvkHF7pJdMc0-6Vn1ufg'
             ],
             (object)[
                 "first_name" => "Loay",
@@ -41,7 +43,8 @@ class UserSeeder extends Seeder
                 "date_of_birth" => "2005-1-4",
                 "role" => 'renter',
                 'status' => 'accepted',
-                "password" => Hash::make("00000000")
+                "password" => Hash::make("00000000"),
+                "fcm_token"=>'cOAd7nyQSICFnhzbTgeDmS:APA91bEt5HRQWpFImEFS-NDDCVmX7mj1XVmQD740qwLam7FQYWzjXjhs1oVTQZkXRO_zAYDUoL-O-A1jvSwKpgv90NmU6XrElx7K2fPmbET77lN4JJ5Jvfk'
             ],
             (object)[
                 "first_name" => "Zuhair",
@@ -50,21 +53,23 @@ class UserSeeder extends Seeder
                 "date_of_birth" => "2005-1-4",
                 "role" => 'owner',
                 'status' => 'accepted',
-                "password" => Hash::make("00000000")
+                "password" => Hash::make("00000000"),
+                "fcm_token"=>'eCWCFdzCSf2IZkUr0_XtPW:APA91bGR6Zrh8ngpDHy5-9CpXmtZHXq3GjCx8ofmFvXoOyha9nIE4HJWp2pfvqnE5Hdrc_eK-64n2hPPqKYZE9GVhlbURWYD9DyAvkHF7pJdMc0-6Vn1ufg'
             ],
             (object)[
                 "first_name" => "Jad",
                 "last_name" => "Jado",
-                "phone_number" => "09000000",
+                "phone_number" => "0900000000",
                 "date_of_birth" => "2005-1-4",
                 "role" => 'admin',
                 'status' => 'accepted',
-                "password" => Hash::make("00000000")
+                "password" => Hash::make("00000000"),
+                "fcm_token"=>'cOAd7nyQSICFnhzbTgeDmS:APA91bEt5HRQWpFImEFS-NDDCVmX7mj1XVmQD740qwLam7FQYWzjXjhs1oVTQZkXRO_zAYDUoL-O-A1jvSwKpgv90NmU6XrElx7K2fPmbET77lN4JJ5Jvfk'
             ],
         ];
 
         foreach ($users as $user) {
-            User::create(['first_name' => $user->first_name, 'last_name' => $user->last_name, 'date_of_birth' => $user->date_of_birth, 'status' => $user->status, 'phone_number' => $user->phone_number, 'role' => $user->role, 'password' => $user->password]);
+            User::create(['first_name' => $user->first_name, 'last_name' => $user->last_name, 'date_of_birth' => $user->date_of_birth, 'status' => $user->status, 'phone_number' => $user->phone_number, 'role' => $user->role, 'password' => $user->password, 'fcm_token'=>$user->fcm_token]);
         }
     }
 }

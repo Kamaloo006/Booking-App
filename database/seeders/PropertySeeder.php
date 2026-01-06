@@ -27,7 +27,7 @@ class PropertySeeder extends Seeder
                 'governorate' => 'Damascus',
                 'city' => 'Mazzeh',
                 'price_per_day' => 150,
-                'description' => 'A sophisticated villa crafted for modern lifestyles, featuring elegant architectural details, expansive living spaces, and a private outdoor area designed for relaxation',
+                'description' => 'A luxurious villa designed for modern living, featuring spacious open-plan interiors, high ceilings, and floor-to-ceiling windows that fill every room with natural light. The property boasts elegant architectural details, a gourmet kitchen with premium appliances, and expansive living and dining areas perfect for entertaining. Step outside to a private landscaped garden, a relaxing patio, and a sparkling swimming pool. Ideally located in a serene neighborhood, this villa offers both privacy and convenience, making it the perfect retreat for families and those who appreciate sophisticated comfort.',
                 'rooms' => 5,
 
                 'bathrooms' => 4,

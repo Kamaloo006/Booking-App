@@ -9,10 +9,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use App\Services\FirebaseNotificationService;
+use App\Services\NotificationService;
+
 
 class UserController extends Controller
 {
+    protected $notificationService;
+
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+    
     public function register(RegisterUserRequest $request)
     {
         $validatedData = $request->validated();
@@ -85,30 +94,7 @@ class UserController extends Controller
             'token' => $token
         ], 200);
     }
-    // لا تنسى استدعاء الـ Service في أعلى الملف
-
-
-    // ... الكود السابق ...
-
-    public function testFirebaseConnection()
-    {
-        $fakeToken = "fake-token-123-valid-format-for-testing-purposes";
-
-        try {
-            $response = FirebaseNotificationService::sendNotification(
-                $fakeToken,
-                "اختبار اتصال",
-                "هل المكتبة تعمل؟"
-            );
-
-            return response()->json([
-                'status' => 'Backend Setup is Correct!',
-                'firebase_response' => $response
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
+   
 
 
     public function logout(Request $request)
@@ -170,14 +156,14 @@ class UserController extends Controller
         $user->save();
 
         if ($user->fcm_token) {
-            FirebaseNotificationService::sendNotification(
+            $this->notificationService->send(
                 $user->fcm_token,
-                " Your account has been activited",
-                "welcome{$user->first_name}، "
+                'Account Approved',
+                'Your account has been approved by admin',
+                ['type' => 'user_status', 'status' => 'accepted']
             );
-        } else {
-            return response()->json(['message' => 'hello']);
         }
+
 
         return response()->json([
             'message' => 'User approved successfully'
@@ -197,6 +183,15 @@ class UserController extends Controller
 
             if ($user->id_img) {
                 Storage::disk('public')->delete($user->id_img);
+            }
+
+            if ($user->fcm_token) {
+                $this->notificationService->send(
+                    $user->fcm_token,
+                    'Account Rejected',
+                    'Your account has been rejected by admin. Please try signing up again.',
+                    ['type' => 'user_status', 'status' => 'rejected']
+                );
             }
 
             $user->delete();

@@ -15,7 +15,7 @@ class Property extends Model
         'area', 'bathrooms'
     ];
 
-    protected $appends = ['main_image_url', 'average_rating'];
+    protected $appends = ['main_image_url', 'average_rating' , 'ratings_count'];
 
     // Relationships
     public function user()
@@ -57,9 +57,21 @@ class Property extends Model
         return $main ? $main->url : null;
     }
 
-    public function getAverageRatingAttribute()
-    {
-        $avg = $this->ratings()->avg('stars');
-        return $avg !== null ? (int) round($avg) : null;
-    }
+   public function getAverageRatingAttribute()
+{
+    $avg = $this->ratings()->avg('stars');
+    return $avg !== null ? round($avg, 1) : null; // e.g., 4.3
+}
+    public function getRatingsCountAttribute()
+{
+    return $this->ratings()->count();
+}
+public function favoritedBy()
+{
+    return $this->belongsToMany(
+        User::class,
+        'favorites'
+    )->withTimestamps();
+}
+
 }

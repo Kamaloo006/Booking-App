@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('property_id')->constrained()->cascadeOnDelete();
 
             // Rating details
-            $table->unsignedTinyInteger('stars'); // 1-5 stars
+            $table->decimal('stars',2,1); // 1-5 stars
             $table->string('comment')->nullable();
 
             // Ensure a user can rate a property only once
