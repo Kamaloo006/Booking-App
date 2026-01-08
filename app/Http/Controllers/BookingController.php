@@ -93,6 +93,21 @@ class BookingController extends Controller
                 'Waiting for the owner to accept the booking'
             );
         }
+       $owner = $property->user;
+
+if ($owner && $owner->fcm_token) {
+    $this->notificationService->send(
+        $owner->fcm_token,
+        'New Booking Request',
+        'You have received a new booking request for your property',
+        [
+            'type' => 'new_booking',
+            'booking_id' => $booking->id,
+            'property_id' => $property->id,
+        ]
+    );
+}
+
 
 
         return response()->json([
@@ -388,6 +403,37 @@ class BookingController extends Controller
             'edit_price'      => $price,
             'status'          => 'pending_edit',
         ]);
+
+        $renter = $booking->user;              // booking owner (renter)
+$owner  = $booking->property->user;    // property owner
+
+// Notify renter
+if ($renter && $renter->fcm_token) {
+    $this->notificationService->send(
+        $renter->fcm_token,
+        'Edit Request Sent',
+        'Your booking edit request was sent to the owner and is waiting for approval',
+        [
+            'type' => 'booking_edit',
+            'booking_id' => $booking->id,
+            'status' => 'pending_edit',
+        ]
+    );
+}
+
+// Notify owner
+if ($owner && $owner->fcm_token) {
+    $this->notificationService->send(
+        $owner->fcm_token,
+        'Booking Edit Request',
+        'A renter has requested to edit an existing booking',
+        [
+            'type' => 'booking_edit_request',
+            'booking_id' => $booking->id,
+            'property_id' => $booking->property_id,
+        ]
+    );
+}
 
         return response()->json([
             'message' => 'Edit request sent to owner',

@@ -56,44 +56,82 @@ class UserController extends Controller
         ], 201);
     }
 
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'phone_number' => 'required|string|regex:/^[0-9]+$/|min:8|max:20',
+    //         'password' => 'required|string|min:8|max:255',
+    //          'fcm_token' => $request->fcm_token,
+    //     ]);
+
+
+    //     $user = User::where('phone_number', $request->phone_number)->first();
+
+    //     if (!$user) {
+    //         return response()->json([
+    //             'message' => 'Phone number is not registered'
+    //         ], 404);
+    //     }
+
+    //     if ($user->status !== 'accepted') {
+    //         return response()->json([
+    //             'message' => 'Your account is not approved yet'
+    //         ], 403);
+    //     }
+
+
+    //     if (!Hash::check($request->password, $user->password)) {
+    //         return response()->json([
+    //             'message' => 'Invalid password'
+    //         ], 401);
+    //     }
+
+
+    //     $token = $user->createToken('Auth_Token')->plainTextToken;
+
+    //     return response()->json([
+    //         'message' => 'User logged in successfully',
+    //         'user' => $user,
+    //         'token' => $token
+    //     ], 200);
+    // }
     public function login(Request $request)
-    {
-        $request->validate([
-            'phone_number' => 'required|string|regex:/^[0-9]+$/|min:8|max:20',
-            'password' => 'required|string|min:8|max:255'
-        ]);
+{
+    $request->validate([
+        'phone_number' => 'required|string|regex:/^[0-9]+$/|min:8|max:20',
+        'password' => 'required|string|min:8|max:255',
+        'fcm_token' => 'nullable|string',
+    ]);
 
+    $user = User::where('phone_number', $request->phone_number)->first();
 
-        $user = User::where('phone_number', $request->phone_number)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Phone number is not registered'
-            ], 404);
-        }
-
-        if ($user->status !== 'accepted') {
-            return response()->json([
-                'message' => 'Your account is not approved yet'
-            ], 403);
-        }
-
-
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Invalid password'
-            ], 401);
-        }
-
-
-        $token = $user->createToken('Auth_Token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'User logged in successfully',
-            'user' => $user,
-            'token' => $token
-        ], 200);
+    if (!$user) {
+        return response()->json(['message' => 'Phone number is not registered'], 404);
     }
+
+    if ($user->status !== 'accepted') {
+        return response()->json(['message' => 'Your account is not approved yet'], 403);
+    }
+
+    if (!Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid password'], 401);
+    }
+
+   
+    if ($request->filled('fcm_token')) {
+        $user->fcm_token = $request->fcm_token;
+        $user->save();
+    }
+
+    $token = $user->createToken('Auth_Token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'User logged in successfully',
+        'user' => $user,
+        'token' => $token
+    ], 200);
+}
+
    
 
 
