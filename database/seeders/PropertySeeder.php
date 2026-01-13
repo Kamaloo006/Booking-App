@@ -93,7 +93,7 @@ class PropertySeeder extends Seeder
                 'kitchens' => 1,
                 'area' => 280,
                 'folder' => 'property_5',
-                'is_available' => false,
+                'is_available' => true,
             ],
         ];
 

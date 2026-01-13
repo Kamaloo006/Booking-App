@@ -57,7 +57,9 @@ class BookingController extends Controller
         $request_start = Carbon::parse($validatedData['start_date']);
         $request_end   = Carbon::parse($validatedData['end_date']);
 
-        $propertyStatus = $property->bookings()->where('status', 'accepted')
+        $propertyStatus = $property->bookings()
+        ->where('status', 'accepted')
+            ->where('end_date', '>=', now()) // ignore past booking
             ->where(function ($q1) use ($request_start, $request_end) {
                 $q1->whereBetween('start_date', [$request_start, $request_end])
                     ->orWhereBetween('end_date', [$request_start, $request_end])
@@ -153,6 +155,7 @@ if ($owner && $owner->fcm_token) {
         // 🔥 التحقق من التعارض قبل القبول فقط
         $conflict = Booking::where('property_id', $booking->property_id)
             ->where('id', '!=', $booking->id)
+                ->where('end_date', '>=', now()) // ignore past bookings
             ->whereIn('status', ['accepted', 'pending_edit']) // pending لا يمنع.. فقط accepted & pending_edit
             ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('start_date', [$start, $end])
@@ -369,6 +372,7 @@ if ($owner && $owner->fcm_token) {
         $conflict = $booking->property->bookings()
             ->where('id', '!=', $booking->id)
             ->where('status', 'accepted')
+                ->where('end_date', '>=', now()) // ignore past bookings
             ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('start_date', [$start, $end])
                     ->orWhereBetween('end_date', [$start, $end])
@@ -460,71 +464,90 @@ if ($owner && $owner->fcm_token) {
 
 
 
-    public function acceptEdit($id)
-    {
-        $owner = Auth::user();
+   public function acceptEdit(int $id)
+{
+    $owner = Auth::user();
 
-        $booking = Booking::where('id', $id)
-            ->where('status', 'pending_edit')
-            ->whereHas('property', fn($q) => $q->where('user_id', $owner->id))
-            ->firstOrFail();
+    // Find the booking in pending_edit status
+    $booking = Booking::where('id', $id)
+        ->where('status', 'pending_edit')
+        ->whereHas('property', fn($q) => $q->where('user_id', $owner->id))
+        ->firstOrFail();
 
-        $start = $booking->edit_start_date;
-        $end   = $booking->edit_end_date;
+    $start = Carbon::parse($booking->edit_start_date);
+    $end   = Carbon::parse($booking->edit_end_date);
 
-        $conflict = Booking::where('property_id', $booking->property_id)
-            ->where('id', '!=', $booking->id)
-            ->where(function ($q) {
-                $q->where('status', 'accepted')
-                    ->orWhere('status', 'pending_edit');
-            })
-            ->where(function ($q) use ($start, $end) {
-                $q->where(function ($x) use ($start, $end) {
-                    $x->where('status', 'accepted')
-                        ->whereBetween('start_date', [$start, $end]);
-                })->orWhere(function ($x) use ($start, $end) {
-                    $x->where('status', 'pending_edit')
-                        ->whereBetween('edit_start_date', [$start, $end]);
-                });
-            })
-            ->exists();
+    // Check for conflicts with other accepted or pending_edit bookings
+    $conflict = Booking::where('property_id', $booking->property_id)
+        ->where('id', '!=', $booking->id)
+            ->where('end_date', '>=', now()) // ignore past bookings
+        ->whereIn('status', ['accepted', 'pending_edit'])
+        ->where(function ($q) use ($start, $end) {
+            $q->where(function ($x) use ($start, $end) {
+                // Conflicts with accepted bookings
+                $x->where('status', 'accepted')
+                  ->where(function ($y) use ($start, $end) {
+                      $y->whereBetween('start_date', [$start, $end])
+                        ->orWhereBetween('end_date', [$start, $end])
+                        ->orWhere(function ($z) use ($start, $end) {
+                            $z->where('start_date', '<', $start)
+                              ->where('end_date', '>', $end);
+                        });
+                  });
+            })->orWhere(function ($x) use ($start, $end) {
+                // Conflicts with pending edit bookings
+                $x->where('status', 'pending_edit')
+                  ->where(function ($y) use ($start, $end) {
+                      $y->whereBetween('edit_start_date', [$start, $end])
+                        ->orWhereBetween('edit_end_date', [$start, $end])
+                        ->orWhere(function ($z) use ($start, $end) {
+                            $z->where('edit_start_date', '<', $start)
+                              ->where('edit_end_date', '>', $end);
+                        });
+                  });
+            });
+        })
+        ->exists();
 
-        if ($conflict) {
-            return response()->json([
-                'message' => 'Cannot accept edit due to date conflict'
-            ], 422);
-        }
-
-        $booking->update([
-            'start_date'      => $booking->edit_start_date,
-            'end_date'        => $booking->edit_end_date,
-            'price'           => $booking->edit_price,
-            'edit_start_date' => null,
-            'edit_end_date'   => null,
-            'edit_price'      => null,
-            'status'          => 'accepted',
-        ]);
-
-        $this->updatePropertyAvailability($booking->property);
-
-        if ($booking->user && $booking->user->fcm_token) {
-            $this->notificationService->send(
-                $booking->user->fcm_token,
-                'Booking Edit accepted',
-                "Your booking modification for {$booking->property->name} has been accepted.",
-                [
-                    'type' => 'booking_status',
-                    'status' => 'accepted',
-                    'booking_id' => $booking->id
-                ]
-            );
-        }
-        
+    if ($conflict) {
         return response()->json([
-            'message' => 'Edit accepted successfully',
-            'booking' => $booking
-        ]);
+            'message' => 'Cannot accept edit due to date conflict'
+        ], 422);
     }
+
+    // Update booking with edited dates and price
+    $booking->update([
+        'start_date'      => $booking->edit_start_date,
+        'end_date'        => $booking->edit_end_date,
+        'price'           => $booking->edit_price,
+        'edit_start_date' => null,
+        'edit_end_date'   => null,
+        'edit_price'      => null,
+        'status'          => 'accepted',
+    ]);
+
+    $this->updatePropertyAvailability($booking->property);
+
+    // Notify the renter
+    if ($booking->user && $booking->user->fcm_token) {
+        $this->notificationService->send(
+            $booking->user->fcm_token,
+            'Booking Edit Accepted',
+            "Your booking modification for {$booking->property->name} has been accepted.",
+            [
+                'type' => 'booking_status',
+                'status' => 'accepted',
+                'booking_id' => $booking->id
+            ]
+        );
+    }
+
+    return response()->json([
+        'message' => 'Edit accepted successfully',
+        'booking' => $booking
+    ], 200);
+}
+
 
 
 
